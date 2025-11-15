@@ -1,0 +1,5 @@
+{
+  "name": "Interactive AI Map",
+  "description": "A technical force-directed graph illustrating the hierarchy and interrelationships of concepts within the field of Artificial Intelligence. Shows subfields, paradigms, architectures, and applications.",
+  "requestFramePermissions": []
+}
