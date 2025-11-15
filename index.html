@@ -36,14 +36,14 @@
 
         /* Style for the node labels (text) */
         .label {
-            font-size: 12px;
+            font-size: 14px;
             fill: #e0e0e0;
             text-anchor: middle;
             pointer-events: none; /* Allows dragging the circle underneath */
             /* Add a slight stroke for readability against complex backgrounds */
             paint-order: stroke;
             stroke: #111827; /* Page background color */
-            stroke-width: 3px;
+            stroke-width: 4px;
             stroke-linecap: butt;
             stroke-linejoin: miter;
         }
@@ -62,6 +62,13 @@
             opacity: 0;
             transition: opacity 0.2s;
         }
+
+        #ai-map {
+            cursor: grab;
+        }
+        #ai-map:active {
+            cursor: grabbing;
+        }
     </style>
 <script type="importmap">
 {
@@ -79,7 +86,7 @@
     <header class="bg-gray-800/80 backdrop-blur-sm shadow-lg w-full z-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <h1 class="text-xl font-bold tracking-tight text-white">Interactive Map: The Field of Artificial Intelligence</h1>
-            <p class="text-sm text-gray-400">A technical hierarchy showing subfields, paradigms, architectures, and applications. Drag nodes to explore.</p>
+            <p class="text-sm text-gray-400">Drag to pan, scroll to zoom. Drag nodes to explore relationships.</p>
         </div>
     </header>
 
@@ -116,6 +123,15 @@
             <div id="tooltip" class="tooltip"></div>
             <!-- SVG Container -->
             <svg id="ai-map" class="w-full h-full"></svg>
+            <!-- Zoom Controls -->
+            <div class="absolute bottom-4 right-4 z-10 flex flex-col space-y-2">
+                <button id="zoom-in" title="Zoom In" class="bg-gray-700/80 hover:bg-gray-600 text-white font-bold p-2 rounded-full shadow-lg transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                </button>
+                <button id="zoom-out" title="Zoom Out" class="bg-gray-700/80 hover:bg-gray-600 text-white font-bold p-2 rounded-full shadow-lg transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6" /></svg>
+                </button>
+            </div>
         </div>
     </main>
 
@@ -334,6 +350,7 @@
 
         const svg = d3.select("svg#ai-map");
         const container = svg.node().parentNode;
+        const view = svg.append("g"); // Main container for zoom/pan
 
         // Tooltip
         const tooltip = d3.select("#tooltip");
@@ -381,13 +398,13 @@
             simulation = d3.forceSimulation(nodes)
                 .force("link", d3.forceLink(links).id(d => d.id).distance(d => {
                     // Make links longer for higher-level concepts
-                    if (d.source.group <= 2 || d.target.group <= 2) return 100;
-                    if (d.type === 'application' || d.type === 'uses') return 80;
-                    return 50;
+                    if (d.source.group <= 2 || d.target.group <= 2) return 120;
+                    if (d.type === 'application' || d.type === 'uses') return 90;
+                    return 60;
                 }).strength(d => (d.type === 'application' || d.type === 'uses') ? 0.2 : 1))
-                .force("charge", d3.forceManyBody().strength(-250)) // Repulsion
+                .force("charge", d3.forceManyBody().strength(-450)) // Increased repulsion
                 .force("center", d3.forceCenter(width / 2, height / 2))
-                .force("collision", d3.forceCollide().radius(d => getNodeRadius(d) + 15)); // Prevent overlap
+                .force("collision", d3.forceCollide().radius(d => getNodeRadius(d) + 25)); // Increased padding
         }
 
         // --- 5. DEFINE NODE & LINK STYLES ---
@@ -414,10 +431,10 @@
 
         // --- 6. RENDER THE GRAPH ---
         
-        // Create containers for links and nodes
-        const linkGroup = svg.append("g").attr("class", "links");
-        const nodeGroup = svg.append("g").attr("class", "nodes");
-        const labelGroup = svg.append("g").attr("class", "labels");
+        // Create containers for links and nodes inside the main 'view' group
+        const linkGroup = view.append("g").attr("class", "links");
+        const nodeGroup = view.append("g").attr("class", "nodes");
+        const labelGroup = view.append("g").attr("class", "labels");
 
         function renderGraph() {
             // Get current dimensions
@@ -481,11 +498,11 @@
                 .attr("class", "label")
                 .text(d => d.id)
                 .style("font-size", d => {
-                    if (d.group <= 2) return "14px";
-                    if (d.group === 7 || d.group === 3) return "13px";
-                    return "12px";
+                    if (d.group <= 2) return "16px";
+                    if (d.group === 7 || d.group === 3) return "15px";
+                    return "14px";
                 })
-                .style("font-weight", d => (d.group <= 2 || d.group === 7) ? "600" : "400");
+                .style("font-weight", d => (d.group <= 2 || d.group === 7) ? "600" : "500");
             
             // --- Simulation Tick ---
             // This function runs on every "tick" of the simulation, updating positions
@@ -502,7 +519,7 @@
 
                 label
                     .attr("x", d => d.x)
-                    .attr("y",d => d.y + getNodeRadius(d) + 15); // Position label below node
+                    .attr("y",d => d.y + getNodeRadius(d) + 18); // Position label below node
             });
         }
 
@@ -531,7 +548,25 @@
                 .on("end", dragended);
         }
 
-        // --- 8. HANDLE RESIZING ---
+        // --- 8. ADD ZOOM/PAN FUNCTIONALITY ---
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 8]) // Set min/max zoom levels
+            .on("zoom", (event) => {
+                view.attr("transform", event.transform);
+            });
+
+        svg.call(zoom);
+
+        // --- Add button handlers for zoom ---
+        d3.select("#zoom-in").on("click", () => {
+            svg.transition().duration(250).call(zoom.scaleBy, 1.3);
+        });
+
+        d3.select("#zoom-out").on("click", () => {
+            svg.transition().duration(250).call(zoom.scaleBy, 0.7);
+        });
+
+        // --- 9. HANDLE RESIZING ---
         let resizeTimer;
         const onResize = () => {
             clearTimeout(resizeTimer);
@@ -551,10 +586,8 @@
 
         window.addEventListener('resize', onResize);
 
-        // --- 9. INITIALIZE AND RENDER ---
+        // --- 10. INITIALIZE AND RENDER ---
         // Need to ensure container has dimensions *before* initializing.
-        // We can wrap in a 'DOMContentLoaded' or just rely on script placement at end of body.
-        // For robustness, let's check dimensions right at the start.
         
         const initialWidth = container.clientWidth || window.innerWidth;
         const initialHeight = container.clientHeight || (window.innerHeight - 100); // Fallback
