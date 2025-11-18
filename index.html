@@ -1,18 +1,55 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-gray-900">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Concept Map</title>
+    <title>AI Concept Map - Interactive Learning Journey</title>
+    <meta name="description"
+        content="Explore the vast universe of Artificial Intelligence. Visualize connections between Machine Learning, Robotics, and more in an interactive 3D-like map.">
+    <meta name="keywords"
+        content="AI, Artificial Intelligence, Machine Learning, Deep Learning, Neural Networks, Interactive Map, Education">
+    <meta name="theme-color" content="#111827">
+    <meta property="og:title" content="AI Concept Map - Interactive Learning Journey">
+    <meta property="og:description"
+        content="Explore the vast universe of Artificial Intelligence. Visualize connections between Machine Learning, Robotics, and more.">
+    <meta property="og:type" content="website">
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gray: {
+                            850: '#1f2937', // Custom dark gray
+                            900: '#111827',
+                            950: '#030712',
+                        },
+                        cyan: {
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                        },
+                        purple: {
+                            500: '#a855f7',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
     <!-- Load D3.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         /* Custom styles for the visualization */
         body {
             font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-            overflow: hidden; /* Prevent scrolling */
+            overflow: hidden;
+            /* Prevent scrolling */
         }
 
         /* Style for the links (lines) */
@@ -39,15 +76,17 @@
             font-size: 14px;
             fill: #e0e0e0;
             text-anchor: middle;
-            pointer-events: none; /* Allows dragging the circle underneath */
+            pointer-events: none;
+            /* Allows dragging the circle underneath */
             /* Add a slight stroke for readability against complex backgrounds */
             paint-order: stroke;
-            stroke: #111827; /* Page background color */
+            stroke: #111827;
+            /* Page background color */
             stroke-width: 4px;
             stroke-linecap: butt;
             stroke-linejoin: miter;
         }
-        
+
         /* Tooltip style */
         .tooltip {
             position: absolute;
@@ -66,11 +105,12 @@
         #ai-map {
             cursor: grab;
         }
+
         #ai-map:active {
             cursor: grabbing;
         }
     </style>
-<script type="importmap">
+    <script type="importmap">
 {
   "imports": {
     "react": "https://aistudiocdn.com/react@^19.2.0",
@@ -80,531 +120,10 @@
 }
 </script>
 </head>
-<body class="h-full flex flex-col text-gray-200">
 
-    <!-- Header -->
-    <header class="bg-gray-800/80 backdrop-blur-sm shadow-lg w-full z-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-            <h1 class="text-xl font-bold tracking-tight text-white">Interactive Map: The Field of Artificial Intelligence</h1>
-            <p class="text-sm text-gray-400">Drag to pan, scroll to zoom. Drag nodes to explore relationships.</p>
-        </div>
-    </header>
-
-    <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col md:flex-row min-h-0">
-        
-        <!-- Legend -->
-        <aside class="w-full md:w-64 bg-gray-800 p-4 overflow-y-auto shadow-inner">
-            <h2 class="text-lg font-semibold mb-3 text-white">Legend</h2>
-            <div id="legend-container" class="space-y-2">
-                <!-- Legend items will be injected by D3 -->
-            </div>
-            
-            <h3 class="text-lg font-semibold mt-6 mb-3 text-white">Relationship Types</h3>
-            <ul class="space-y-2 text-sm">
-                <li>
-                    <svg viewBox="0 0 100 10" class="w-full h-2" preserveAspectRatio="none"><line x1="0" y1="5" x2="100" y2="5" stroke="#9CA3AF" stroke-width="2"></line></svg>
-                    <span class="text-gray-300">Is a subfield/type of</span>
-                </li>
-                <li>
-                    <svg viewBox="0 0 100 10" class="w-full h-2" preserveAspectRatio="none"><line x1="0" y1="5" x2="100" y2="5" stroke="#34D399" stroke-width="2" stroke-dasharray="3 3"></line></svg>
-                    <span class="text-gray-300">Is an application of</span>
-                </li>
-                 <li>
-                    <svg viewBox="0 0 100 10" class="w-full h-2" preserveAspectRatio="none"><line x1="0" y1="5" x2="100" y2="5" stroke="#F87171" stroke-width="2" stroke-dasharray="3 3"></line></svg>
-                    <span class="text-gray-300">Is a component/task of</span>
-                </li>
-            </ul>
-        </aside>
-
-        <!-- Visualization Container -->
-        <div class="flex-1 min-h-0 relative">
-            <!-- Tooltip -->
-            <div id="tooltip" class="tooltip"></div>
-            <!-- SVG Container -->
-            <svg id="ai-map" class="w-full h-full"></svg>
-            <!-- Zoom Controls -->
-            <div class="absolute bottom-4 right-4 z-10 flex flex-col space-y-2">
-                <button id="zoom-in" title="Zoom In" class="bg-gray-700/80 hover:bg-gray-600 text-white font-bold p-2 rounded-full shadow-lg transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-                </button>
-                <button id="zoom-out" title="Zoom Out" class="bg-gray-700/80 hover:bg-gray-600 text-white font-bold p-2 rounded-full shadow-lg transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6" /></svg>
-                </button>
-            </div>
-        </div>
-    </main>
-
-    <script>
-        // --- 1. DEFINE THE DATASET ---
-        // This dataset is structured as 'nodes' (concepts) and 'links' (relationships)
-        // This is the only way to show both hierarchy and cross-domain links.
-
-        const dataset = {
-            nodes: [
-                // Level 1: Core
-                { id: "Artificial Intelligence (AI)", group: 1, desc: "The overarching field of simulating human intelligence in machines." },
-
-                // Level 2: Main Branches
-                { id: "Machine Learning (ML)", group: 2, desc: "A subfield of AI where systems learn from data to identify patterns and make decisions." },
-                { id: "Symbolic AI (GOFAI)", group: 2, desc: "A 'classic' branch of AI focused on high-level symbolic (human-readable) representations of problems, logic, and search." },
-                { id: "Search & Optimization", group: 2, desc: "A branch of AI focused on finding optimal solutions from a large set of possibilities." },
-                { id: "Robotics", group: 2, desc: "Integrates AI and engineering to create and program physical machines that interact with the world." },
-
-                // Level 3: Symbolic AI Subfields
-                { id: "Expert Systems", group: 3, desc: "Systems that emulate the decision-making ability of a human expert, based on a knowledge base and an inference engine." },
-                { id: "Logic Programming", group: 3, desc: "A programming paradigm based on formal logic." },
-                { id: "Knowledge-Based Systems", group: 3, desc: "Systems that store and reason with knowledge to solve complex problems." },
-
-                // Level 3: Search & Opt. Subfields
-                { id: "Heuristics", group: 3, desc: "Practical, non-optimal problem-solving methods that are sufficient for reaching an immediate goal (e.g., A* search)." },
-                { id: "Genetic Algorithms", group: 3, desc: "Optimization algorithms inspired by natural selection, using mutation, crossover, and selection." },
-                { id: "Swarm Intelligence", group: 3, desc: "Collective behavior of decentralized, self-organized systems (e.g., Ant Colony Optimization)." },
-
-                // Level 3: Robotics Subfields
-                { id: "Motion Planning", group: 3, desc: "Finding a path for a robot from a start to a goal state while avoiding obstacles." },
-                { id: "Kinematics", group: 3, desc: "The study of motion without considering the forces that cause it (e.g., forward and inverse kinematics)." },
-                { id: "Control Systems", group: 3, desc: "Systems that manage, command, and regulate the behavior of other devices or systems (e.g., PID controllers)." },
-
-                // Level 3: ML Paradigms
-                { id: "Supervised Learning", group: 3, desc: "Learning from labeled data (input-output pairs) to make predictions." },
-                { id: "Unsupervised Learning", group: 3, desc: "Learning from unlabeled data to find hidden patterns or intrinsic structures." },
-                { id: "Reinforcement Learning (RL)", group: 3, desc: "Learning to make sequential decisions by interacting with an environment to maximize a cumulative reward." },
-                { id: "Semi-Supervised Learning", group: 3, desc: "A hybrid approach using a small amount of labeled data and a large amount of unlabeled data." },
-                { id: "Deep Learning (DL)", group: 3, desc: "A subfield of ML based on Artificial Neural Networks with multiple layers (deep architectures)." },
-
-                // Level 4: Supervised Techniques
-                { id: "Regression", group: 4, desc: "Predicting a continuous-valued output (e.g., price, temperature)." },
-                { id: "Linear Regression", group: 5, desc: "A linear approach to modeling the relationship between a dependent variable and one or more independent variables." },
-                { id: "Polynomial Regression", group: 5, desc: "A form of regression analysis in which the relationship between the independent variable x and the dependent variable y is modeled as an nth degree polynomial in x." },
-                { id: "Classification", group: 4, desc: "Predicting a discrete, categorical output (e.g., 'spam' or 'not spam')." },
-                { id: "Logistic Regression", group: 5, desc: "A classification algorithm that predicts the probability of a categorical dependent variable." },
-                { id: "k-Nearest Neighbors (k-NN)", group: 5, desc: "A non-parametric classification method based on the 'k' closest training examples in the feature space." },
-                { id: "Support Vector Machines (SVMs)", group: 5, desc: "A classifier that finds an optimal hyperplane to separate data points into classes." },
-                { id: "Decision Trees", group: 5, desc: "A tree-like model of decisions and their possible consequences." },
-                { id: "Random Forests", group: 5, desc: "An ensemble learning method that operates by constructing multiple decision trees at training time." },
-                
-                // Level 4: Unsupervised Techniques
-                { id: "Clustering", group: 4, desc: "Grouping a set of objects such that objects in the same group (cluster) are more similar to each other than to those in other groups." },
-                { id: "k-Means", group: 5, desc: "Partitions n observations into k clusters in which each observation belongs to the cluster with the nearest mean." },
-                { id: "DBSCAN", group: 5, desc: "A density-based clustering algorithm that groups together points that are closely packed together, marking as outliers points that lie alone in low-density regions." },
-                { id: "Hierarchical Clustering", group: 5, desc: "Builds a hierarchy of clusters, represented as a tree-like structure (dendrogram)." },
-                { id: "Dimensionality Reduction", group: 4, desc: "Reducing the number of random variables under consideration, via feature selection or feature extraction." },
-                { id: "Principal Component Analysis (PCA)", group: 5, desc: "A linear technique for dimensionality reduction that transforms data into a new coordinate system of principal components." },
-                { id: "t-SNE", group: 5, desc: "A non-linear technique for dimensionality reduction that is particularly well-suited for embedding high-dimensional data for visualization in a low-dimensional space (e.g., 2D or 3D)." },
-                { id: "Association Rule Learning", group: 4, desc: "Discovering interesting relations (e.g., 'if-then' rules) between variables in large databases." },
-                { id: "Apriori", group: 5, desc: "A classic algorithm for frequent item set mining and association rule learning." },
-
-                // Level 4: RL Techniques
-                { id: "Markov Decision Processes (MDPs)", group: 4, desc: "A mathematical framework for modeling decision-making in situations where outcomes are partly random and partly under the control of a decision-maker." },
-                { id: "Q-Learning", group: 4, desc: "A model-free RL algorithm to learn the quality of actions in a given state (the 'Q' value)." },
-                { id: "Policy Gradients", group: 4, desc: "RL methods that learn the policy function (which maps state to action) directly." },
-                { id: "Deep Q-Networks (DQN)", group: 4, desc: "An algorithm that combines Q-Learning with Deep Neural Networks to create a powerful RL agent." },
-
-                // Level 4: Deep Learning Architectures
-                { id: "Artificial Neural Networks (ANNs)", group: 4, desc: "The foundational concept of DL, inspired by the human brain. Also known as Feedforward Networks (FNNs)." },
-                { id: "Convolutional Neural Networks (CNNs)", group: 4, desc: "A class of neural networks most commonly applied to analyze visual imagery. Utilizes convolutional and pooling layers." },
-                { id: "Recurrent Neural Networks (RNNs)", group: 4, desc: "A class of neural networks designed to work with sequential data (e.g., time series or text) by maintaining an internal state (memory)." },
-                { id: "Long Short-Term Memory (LSTM)", group: 5, desc: "An advanced type of RNN that uses 'gates' to effectively manage long-term dependencies in sequential data, avoiding the vanishing gradient problem." },
-                { id: "Gated Recurrent Units (GRU)", group: 5, desc: "A simpler variant of LSTM that combines the forget and input gates into a single 'update gate'." },
-                { id: "Transformers", group: 4, desc: "A modern architecture that relies entirely on self-attention mechanisms to draw global dependencies between input and output. Forms the basis for models like BERT and GPT." },
-                { id: "Self-Attention", group: 5, desc: "The core mechanism of Transformers, allowing the model to weigh the importance of different parts of the input data relative to each other." },
-                { id: "BERT", group: 6, desc: "Bidirectional Encoder Representations from Transformers. A model designed to pre-train deep bidirectional representations from unlabeled text." },
-                { id: "GPT (Generative Pre-trained Transformer)", group: 6, desc: "A family of auto-regressive language models that use Transformers to generate human-like text." },
-                { id: "T5", group: 6, desc: "Text-to-Text Transfer Transformer. A model that frames all NLP tasks as a text-to-text problem." },
-                { id: "Generative Adversarial Networks (GANs)", group: 4, desc: "A class of generative models consisting of two competing networks: a 'Generator' (creates data) and a 'Discriminator' (evaluates data)." },
-                { id: "Autoencoders", group: 4, desc: "An unsupervised neural network that learns compressed representations (encoding) of data. Used for dimensionality reduction and feature learning." },
-                { id: "Variational Autoencoders (VAEs)", group: 5, desc: "A generative variant of autoencoders that learns a probabilistic latent variable model." },
-
-                // Level 5: Application Fields
-                { id: "Computer Vision (CV)", group: 7, desc: "A field that enables computers to 'see', interpret, and understand the visual world from digital images or videos." },
-                { id: "Natural Language Processing (NLP)", group: 7, desc: "A field focused on the interaction between computers and human language, including understanding, interpreting, and generating text." },
-                { id: "Large Language Models (LLMs)", group: 8, desc: "Modern NLP models, typically based on the Transformer architecture, trained on massive datasets (e.g., GPT, BERT)." },
-                { id: "Speech Recognition", group: 7, desc: "A field focused on converting spoken language into text (Speech-to-Text) or identifying speakers." },
-
-                // Level 6: Application Tasks
-                { id: "Image Classification", group: 8, desc: "A CV task of assigning a label (class) to an entire image." },
-                { id: "Object Detection", group: 8, desc: "A CV task of identifying and locating objects within an image (e.g., drawing bounding boxes)." },
-                { id: "Semantic Segmentation", group: 8, desc: "A CV task of classifying each pixel in an image to a specific class." },
-                { id: "Vision Transformers (ViT)", group: 8, desc: "Application of the Transformer architecture directly to sequences of image patches for classification tasks." },
-                
-                { id: "Sentiment Analysis", group: 8, desc: "An NLP task of determining the emotional tone (positive, negative, neutral) behind a piece of text." },
-                { id: "Machine Translation", group: 8, desc: "An NLP task of automatically translating text from one language to another." },
-                { id: "Named Entity Recognition (NER)", group: 8, desc: "An NLP task of identifying and categorizing key entities (like names, places, organizations) in text." },
-                { id: "Text Summarization", group: 8, desc: "An NLP task of creating a short, fluent, and accurate summary of a longer text document." },
-                
-                { id: "Speech-to-Text", group: 8, desc: "The core task of speech recognition: transcribing audio into written text." },
-                { id: "Speaker Identification", group: 8, desc: "The task of identifying a person from their voice." },
-            ],
-            links: [
-                // L1 -> L2
-                { source: "Artificial Intelligence (AI)", target: "Machine Learning (ML)", type: "subfield" },
-                { source: "Artificial Intelligence (AI)", target: "Symbolic AI (GOFAI)", type: "subfield" },
-                { source: "Artificial Intelligence (AI)", target: "Search & Optimization", type: "subfield" },
-                { source: "Artificial Intelligence (AI)", target: "Robotics", type: "subfield" },
-
-                // L2 (Symbolic) -> L3
-                { source: "Symbolic AI (GOFAI)", target: "Expert Systems", type: "subfield" },
-                { source: "Symbolic AI (GOFAI)", target: "Logic Programming", type: "subfield" },
-                { source: "Symbolic AI (GOFAI)", target: "Knowledge-Based Systems", type: "subfield" },
-                
-                // L2 (Search) -> L3
-                { source: "Search & Optimization", target: "Heuristics", type: "subfield" },
-                { source: "Search & Optimization", target: "Genetic Algorithms", type: "subfield" },
-                { source: "Search & Optimization", target: "Swarm Intelligence", type: "subfield" },
-
-                // L2 (Robotics) -> L3
-                { source: "Robotics", target: "Motion Planning", type: "component" },
-                { source: "Robotics", target: "Kinematics", type: "component" },
-                { source: "Robotics", target: "Control Systems", type: "component" },
-                
-                // L2 (ML) -> L3
-                { source: "Machine Learning (ML)", target: "Supervised Learning", type: "subfield" },
-                { source: "Machine Learning (ML)", target: "Unsupervised Learning", type: "subfield" },
-                { source: "Machine Learning (ML)", target: "Reinforcement Learning (RL)", type: "subfield" },
-                { source: "Machine Learning (ML)", target: "Semi-Supervised Learning", type: "subfield" },
-                { source: "Machine Learning (ML)", target: "Deep Learning (DL)", type: "subfield" },
-                
-                // L3 (Supervised) -> L4/L5
-                { source: "Supervised Learning", target: "Regression", type: "type" },
-                { source: "Regression", target: "Linear Regression", type: "type" },
-                { source: "Regression", target: "Polynomial Regression", type: "type" },
-                { source: "Supervised Learning", target: "Classification", type: "type" },
-                { source: "Classification", target: "Logistic Regression", type: "type" },
-                { source: "Classification", target: "k-Nearest Neighbors (k-NN)", type: "type" },
-                { source: "Classification", target: "Support Vector Machines (SVMs)", type: "type" },
-                { source: "Classification", target: "Decision Trees", type: "type" },
-                { source: "Classification", target: "Random Forests", type: "type" },
-
-                // L3 (Unsupervised) -> L4/L5
-                { source: "Unsupervised Learning", target: "Clustering", type: "type" },
-                { source: "Clustering", target: "k-Means", type: "type" },
-                { source: "Clustering", target: "DBSCAN", type: "type" },
-                { source: "Clustering", target: "Hierarchical Clustering", type: "type" },
-                { source: "Unsupervised Learning", target: "Dimensionality Reduction", type: "type" },
-                { source: "Dimensionality Reduction", target: "Principal Component Analysis (PCA)", type: "type" },
-                { source: "Dimensionality Reduction", target: "t-SNE", type: "type" },
-                { source: "Unsupervised Learning", target: "Association Rule Learning", type: "type" },
-                { source: "Association Rule Learning", target: "Apriori", type: "type" },
-                
-                // L3 (RL) -> L4
-                { source: "Reinforcement Learning (RL)", target: "Markov Decision Processes (MDPs)", type: "component" },
-                { source: "Reinforcement Learning (RL)", target: "Q-Learning", type: "type" },
-                { source: "Reinforcement Learning (RL)", target: "Policy Gradients", type: "type" },
-                { source: "Reinforcement Learning (RL)", target: "Deep Q-Networks (DQN)", type: "type" },
-                { source: "Deep Q-Networks (DQN)", target: "Deep Learning (DL)", type: "uses" }, // Cross-link
-                { source: "Deep Q-Networks (DQN)", target: "Q-Learning", type: "uses" }, // Cross-link
-
-                // L3 (DL) -> L4
-                { source: "Deep Learning (DL)", target: "Artificial Neural Networks (ANNs)", type: "component" },
-                { source: "Deep Learning (DL)", target: "Convolutional Neural Networks (CNNs)", type: "type" },
-                { source: "Deep Learning (DL)", target: "Recurrent Neural Networks (RNNs)", type: "type" },
-                { source: "Deep Learning (DL)", target: "Transformers", type: "type" },
-                { source: "Deep Learning (DL)", target: "Generative Adversarial Networks (GANs)", type: "type" },
-                { source: "Deep Learning (DL)", target: "Autoencoders", type: "type" },
-
-                // L4 (DL Arch) -> L5/L6
-                { source: "Recurrent Neural Networks (RNNs)", target: "Long Short-Term Memory (LSTM)", type: "type" },
-                { source: "Recurrent Neural Networks (RNNs)", target: "Gated Recurrent Units (GRU)", type: "type" },
-                { source: "Transformers", target: "Self-Attention", type: "component" },
-                { source: "Transformers", target: "BERT", type: "type" },
-                { source: "Transformers", target: "GPT (Generative Pre-trained Transformer)", type: "type" },
-                { source: "Transformers", target: "T5", type: "type" },
-                { source: "Autoencoders", target: "Variational Autoencoders (VAEs)", type: "type" },
-                
-                // L5 (Applications) & L6 (Tasks)
-                { source: "Computer Vision (CV)", target: "Image Classification", type: "task" },
-                { source: "Computer Vision (CV)", target: "Object Detection", type: "task" },
-                { source: "Computer Vision (CV)", target: "Semantic Segmentation", type: "task" },
-                { source: "Computer Vision (CV)", target: "Vision Transformers (ViT)", type: "type" },
-                
-                { source: "Natural Language Processing (NLP)", target: "Sentiment Analysis", type: "task" },
-                { source: "Natural Language Processing (NLP)", target: "Machine Translation", type: "task" },
-                { source: "Natural Language Processing (NLP)", target: "Named Entity Recognition (NER)", type: "task" },
-                { source: "Natural Language Processing (NLP)", target: "Text Summarization", type: "task" },
-                { source: "Natural Language Processing (NLP)", target: "Large Language Models (LLMs)", type: "type" },
-                
-                { source: "Speech Recognition", target: "Speech-to-Text", type: "task" },
-                { source: "Speech Recognition", target: "Speaker Identification", type: "task" },
-
-                // --- CRITICAL CROSS-LINKS (APPLICATION) ---
-                { source: "Artificial Intelligence (AI)", target: "Computer Vision (CV)", type: "application" },
-                { source: "Artificial Intelligence (AI)", target: "Natural Language Processing (NLP)", type: "application" },
-                { source: "Artificial Intelligence (AI)", target: "Speech Recognition", type: "application" },
-                
-                { source: "Convolutional Neural Networks (CNNs)", target: "Computer Vision (CV)", type: "application" },
-                
-                { source: "Recurrent Neural Networks (RNNs)", target: "Natural Language Processing (NLP)", type: "application" },
-                { source: "Recurrent Neural Networks (RNNs)", target: "Speech Recognition", type: "application" },
-                
-                { source: "Transformers", target: "Natural Language Processing (NLP)", type: "application" },
-                { source: "Transformers", target: "Speech Recognition", type: "application" },
-                { source: "Transformers", target: "Vision Transformers (ViT)", type: "uses" },
-                
-                { source: "Large Language Models (LLMs)", target: "BERT", type: "uses" },
-                { source: "Large Language Models (LLMs)", target: "GPT (Generative Pre-trained Transformer)", type: "uses" },
-            ]
-        };
-
-        // --- 2. SETUP THE VISUALIZATION ---
-
-        const svg = d3.select("svg#ai-map");
-        const container = svg.node().parentNode;
-        const view = svg.append("g"); // Main container for zoom/pan
-
-        // Tooltip
-        const tooltip = d3.select("#tooltip");
-
-        // Color Scale
-        const categories = [
-            { group: 1, name: "Core Field (L1)" },
-            { group: 2, name: "Main Branches (L2)" },
-            { group: 3, name: "Subfields / Paradigms (L3)" },
-            { group: 4, name: "Techniques / Architectures (L4)" },
-            { group: 5, name: "Specific Models / Variants (L5)" },
-            { group: 6, name: "Example Models (L6)" },
-            { group: 7, name: "Application Fields (L5)" },
-            { group: 8, name: "Application Tasks / Types (L6)" },
-        ];
-        
-        // Use a vibrant, distinct color scheme
-        const color = d3.scaleOrdinal()
-            .domain(categories.map(c => c.group))
-            .range(["#ef4444", "#f97316", "#eab308", "#22c55e", "#14b8a6", "#3b82f6", "#a855f7", "#ec4899"]);
-
-        // --- 3. CREATE THE LEGEND ---
-        const legend = d3.select("#legend-container");
-        const legendItem = legend.selectAll("div")
-            .data(categories)
-            .enter()
-            .append("div")
-            .attr("class", "flex items-center space-x-2");
-
-        legendItem.append("div")
-            .attr("class", "w-4 h-4 rounded-full")
-            .style("background-color", d => color(d.group));
-
-        legendItem.append("span")
-            .attr("class", "text-sm text-gray-300")
-            .text(d => d.name);
-
-        // --- 4. INITIALIZE THE FORCE SIMULATION ---
-        let simulation;
-
-        function initializeSimulation(width, height) {
-            const nodes = dataset.nodes.map(d => ({...d})); // Create copies
-            const links = dataset.links.map(d => ({...d})); // Create copies
-
-            simulation = d3.forceSimulation(nodes)
-                .force("link", d3.forceLink(links).id(d => d.id).distance(d => {
-                    // Make links longer for higher-level concepts
-                    if (d.source.group <= 2 || d.target.group <= 2) return 120;
-                    if (d.type === 'application' || d.type === 'uses') return 90;
-                    return 60;
-                }).strength(d => (d.type === 'application' || d.type === 'uses') ? 0.2 : 1))
-                .force("charge", d3.forceManyBody().strength(-450)) // Increased repulsion
-                .force("center", d3.forceCenter(width / 2, height / 2))
-                .force("collision", d3.forceCollide().radius(d => getNodeRadius(d) + 25)); // Increased padding
-        }
-
-        // --- 5. DEFINE NODE & LINK STYLES ---
-
-        const getNodeRadius = (d) => {
-            if (d.group === 1) return 20; // AI
-            if (d.group === 2) return 16; // Main Branches
-            if (d.group === 7) return 14; // Application Fields
-            if (d.group === 3) return 12;
-            if (d.group === 4) return 10;
-            return 8; // Specific models/tasks
-        };
-
-        const getLinkStroke = (d) => {
-            if (d.type === 'application') return "#34D399"; // Green
-            if (d.type === 'task' || d.type === 'component') return "#F87171"; // Red
-            return "#9CA3AF"; // Gray
-        };
-
-        const getLinkStrokeDash = (d) => {
-            if (d.type === 'subfield' || d.type === 'type') return "none";
-            return "3 3"; // Dashed for applications/tasks
-        };
-
-        // --- 6. RENDER THE GRAPH ---
-        
-        // Create containers for links and nodes inside the main 'view' group
-        const linkGroup = view.append("g").attr("class", "links");
-        const nodeGroup = view.append("g").attr("class", "nodes");
-        const labelGroup = view.append("g").attr("class", "labels");
-
-        function renderGraph() {
-            // Get current dimensions
-            const width = container.clientWidth || window.innerWidth;
-            const height = container.clientHeight || (window.innerHeight - 100); // Fallback height
-
-            // Update SVG dimensions
-            svg.attr("width", width).attr("height", height);
-
-            // Update simulation center
-            if (simulation) {
-                simulation.force("center", d3.forceCenter(width / 2, height / 2));
-            } else {
-                // Failsafe if simulation didn't init, though it should have.
-                initializeSimulation(width, height);
-            }
-            
-            // --- Links ---
-            const link = linkGroup
-                .selectAll("line")
-                .data(simulation.force("link").links())
-                .join("line")
-                .attr("class", "link")
-                .style("stroke", d => getLinkStroke(d))
-                .style("stroke-dasharray", d => getLinkStrokeDash(d))
-                .style("stroke-width", 1.5);
-                
-            // --- Nodes ---
-            const node = nodeGroup
-                .selectAll("circle")
-                .data(simulation.nodes())
-                .join("circle")
-                .attr("class", "node")
-                .attr("r", d => getNodeRadius(d))
-                .style("fill", d => color(d.group))
-                .on("mouseover", (event, d) => {
-                    tooltip.transition().duration(200).style("opacity", .9);
-                    tooltip.html(`<strong>${d.id}</strong><br/>${d.desc}`)
-                        .style("left", (event.pageX + 15) + "px")
-                        .style("top", (event.pageY - 28) + "px");
-                    
-                    // Highlight neighbors
-                    link.style("stroke-opacity", l => (l.source === d || l.target === d) ? 1 : 0.1);
-                    node.style("opacity", n => (n === d || simulation.force("link").links().some(l => (l.source === d && l.target === n) || (l.target === d && l.source === n))) ? 1 : 0.3);
-                    label.style("opacity", n => (n === d || simulation.force("link").links().some(l => (l.source === d && l.target === n) || (l.target === d && l.source === n))) ? 1 : 0.3);
-                })
-                .on("mouseout", () => {
-                    tooltip.transition().duration(500).style("opacity", 0);
-                    // Restore default opacity
-                    link.style("stroke-opacity", 0.6);
-                    node.style("opacity", 1);
-                    label.style("opacity", 1);
-                })
-                .call(drag(simulation)); // Add drag behavior
-
-            // --- Labels ---
-            const label = labelGroup
-                .selectAll("text")
-                .data(simulation.nodes())
-                .join("text")
-                .attr("class", "label")
-                .text(d => d.id)
-                .style("font-size", d => {
-                    if (d.group <= 2) return "16px";
-                    if (d.group === 7 || d.group === 3) return "15px";
-                    return "14px";
-                })
-                .style("font-weight", d => (d.group <= 2 || d.group === 7) ? "600" : "500");
-            
-            // --- Simulation Tick ---
-            // This function runs on every "tick" of the simulation, updating positions
-            simulation.on("tick", () => {
-                link
-                    .attr("x1", d => d.source.x)
-                    .attr("y1", d => d.source.y)
-                    .attr("x2", d => d.target.x)
-                    .attr("y2", d => d.target.y);
-
-                node
-                    .attr("cx", d => d.x)
-                    .attr("cy", d => d.y);
-
-                label
-                    .attr("x", d => d.x)
-                    .attr("y",d => d.y + getNodeRadius(d) + 18); // Position label below node
-            });
-        }
-
-        // --- 7. ADD DRAG FUNCTIONALITY ---
-        function drag(simulation) {
-            function dragstarted(event, d) {
-                if (!event.active) simulation.alphaTarget(0.3).restart();
-                d.fx = d.x;
-                d.fy = d.y;
-            }
-            
-            function dragged(event, d) {
-                d.fx = event.x;
-                d.fy = event.y;
-            }
-            
-            function dragended(event, d) {
-                if (!event.active) simulation.alphaTarget(0);
-                d.fx = null;
-                d.fy = null;
-            }
-            
-            return d3.drag()
-                .on("start", dragstarted)
-                .on("drag", dragged)
-                .on("end", dragended);
-        }
-
-        // --- 8. ADD ZOOM/PAN FUNCTIONALITY ---
-        const zoom = d3.zoom()
-            .scaleExtent([0.1, 8]) // Set min/max zoom levels
-            .on("zoom", (event) => {
-                view.attr("transform", event.transform);
-            });
-
-        svg.call(zoom);
-
-        // --- Add button handlers for zoom ---
-        d3.select("#zoom-in").on("click", () => {
-            svg.transition().duration(250).call(zoom.scaleBy, 1.3);
-        });
-
-        d3.select("#zoom-out").on("click", () => {
-            svg.transition().duration(250).call(zoom.scaleBy, 0.7);
-        });
-
-        // --- 9. HANDLE RESIZING ---
-        let resizeTimer;
-        const onResize = () => {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
-                const width = container.clientWidth || window.innerWidth;
-                const height = container.clientHeight || (window.innerHeight - 100);
-                
-                svg.attr("width", width).attr("height", height);
-                
-                // Update simulation center
-                if (simulation) {
-                    simulation.force("center", d3.forceCenter(width / 2, height / 2));
-                    simulation.alpha(0.3).restart(); // Reheat the simulation
-                }
-            }, 200); // Debounce
-        };
-
-        window.addEventListener('resize', onResize);
-
-        // --- 10. INITIALIZE AND RENDER ---
-        // Need to ensure container has dimensions *before* initializing.
-        
-        const initialWidth = container.clientWidth || window.innerWidth;
-        const initialHeight = container.clientHeight || (window.innerHeight - 100); // Fallback
-        
-        if (initialHeight > 0) {
-            initializeSimulation(initialWidth, initialHeight);
-            renderGraph();
-        } else {
-            // If height is still 0, wait a moment for layout to finish
-            setTimeout(() => {
-                const w = container.clientWidth || window.innerWidth;
-                const h = container.clientHeight || (window.innerHeight - 100);
-                initializeSimulation(w, h);
-                renderGraph();
-            }, 100); // 100ms delay for layout
-        }
-        
-    </script>
+<body class="h-full bg-gray-900 text-gray-100 overflow-hidden">
+    <div id="root" class="h-full"></div>
+    <script type="module" src="/src/index.tsx"></script>
 </body>
+
 </html>
