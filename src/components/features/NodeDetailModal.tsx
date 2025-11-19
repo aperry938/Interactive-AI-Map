@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { TreeNode } from '../../types';
 import { QuizComponent } from './Quiz';
+import { generateInsight } from '../../services/gemini';
 
 interface NodeDetailModalProps {
     node: TreeNode;
@@ -12,6 +13,8 @@ interface NodeDetailModalProps {
 export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({ node, isMastered, onClose, onMaster }) => {
     const [showQuiz, setShowQuiz] = useState(false);
     const [quizResult, setQuizResult] = useState<boolean | null>(null);
+    const [aiInsight, setAiInsight] = useState<string | null>(null);
+    const [isLoadingAI, setIsLoadingAI] = useState(false);
 
     const handleQuizComplete = (correct: boolean) => {
         setQuizResult(correct);
@@ -19,6 +22,13 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({ node, isMaster
             onMaster(node.id);
         }
     }
+
+    const handleGenerateInsight = async () => {
+        setIsLoadingAI(true);
+        const insight = await generateInsight(node.name, node.description);
+        setAiInsight(insight);
+        setIsLoadingAI(false);
+    };
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 flex items-center justify-center" onClick={onClose}>
@@ -37,6 +47,37 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({ node, isMaster
                     </div>
                     <div className="mt-4 text-gray-300">
                         <p className="whitespace-pre-wrap">{node.description || "No description available."}</p>
+
+                        {/* AI Insight Section */}
+                        <div className="mt-6 border-t border-gray-700 pt-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-lg font-semibold text-purple-400 flex items-center gap-2">
+                                    <span className="text-xl">✨</span> AI Insight
+                                </h3>
+                                {!aiInsight && !isLoadingAI && (
+                                    <button
+                                        onClick={handleGenerateInsight}
+                                        className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded-full transition-colors"
+                                    >
+                                        Generate
+                                    </button>
+                                )}
+                            </div>
+
+                            {isLoadingAI ? (
+                                <div className="flex items-center gap-2 text-gray-400 animate-pulse">
+                                    <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                                    Consulting the neural network...
+                                </div>
+                            ) : aiInsight ? (
+                                <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4 text-gray-200 italic">
+                                    "{aiInsight}"
+                                </div>
+                            ) : (
+                                <p className="text-sm text-gray-500">Get a unique, futuristic perspective on this concept powered by Gemini.</p>
+                            )}
+                        </div>
+
                         {node.link && (
                             <a href={node.link} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-cyan-400 hover:text-cyan-300 hover:underline">
                                 Learn More &rarr;

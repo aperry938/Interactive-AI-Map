@@ -1,9 +1,8 @@
 import React, { useRef, useEffect, useMemo } from 'react';
-import type { TreeNode } from '../types';
+import * as d3 from 'd3';
+import type { TreeNode } from '../../types';
 
-declare const d3: any;
-
-const AITreeDiagram: React.FC<{
+export const AITreeDiagram: React.FC<{
   data: TreeNode;
   searchTerm: string;
   onNodeSelect: (node: TreeNode | null) => void;
@@ -12,14 +11,14 @@ const AITreeDiagram: React.FC<{
 }> = ({ data, searchTerm, onNodeSelect, resetViewToggle, masteredNodes }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const rootNodeRef = useRef<any>(null);
-  const gRef = useRef<any>(null);
-  const zoomRef = useRef<any>(null);
-  const initialTransformRef = useRef<any>(null);
+  const rootNodeRef = useRef<d3.HierarchyPointNode<TreeNode> | null>(null);
+  const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
+  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+  const initialTransformRef = useRef<d3.ZoomTransform | null>(null);
   const masteredSet = useMemo(() => new Set(masteredNodes), [masteredNodes]);
 
   const root = useMemo(() => {
-    const hierarchy = d3.hierarchy(data);
+    const hierarchy = d3.hierarchy<TreeNode>(data);
     hierarchy.descendants().forEach((d: any) => {
       if (d.depth >= 2) {
         d._children = d.children;
@@ -32,136 +31,199 @@ const AITreeDiagram: React.FC<{
 
   useEffect(() => {
     if (!svgRef.current || !containerRef.current) return;
-    
+
     const svg = d3.select(svgRef.current);
     const container = containerRef.current;
-    
+
     const width = container.clientWidth;
     const height = container.clientHeight;
-    const radius = Math.min(width, height) / 2 * 0.8;
+    // Increase radius for more spacing
+    const radius = Math.min(width, height) / 2 * 0.85;
 
-    const treeLayout = d3.tree().size([2 * Math.PI, radius]).separation((a: any, b: any) => (a.parent == b.parent ? 1 : 2) / a.depth);
+    const treeLayout = d3.tree<TreeNode>()
+      .size([2 * Math.PI, radius])
+      // Increase separation between siblings and branches
+      .separation((a, b) => (a.parent == b.parent ? 2 : 3) / a.depth);
 
     if (!gRef.current) {
       const defs = svg.append("defs");
       const filter = defs.append("filter")
-          .attr("id", "glow");
+        .attr("id", "glow");
       filter.append("feGaussianBlur")
-          .attr("stdDeviation", "3.5")
-          .attr("result", "coloredBlur");
+        .attr("stdDeviation", "3.5")
+        .attr("result", "coloredBlur");
       const feMerge = filter.append("feMerge");
       feMerge.append("feMergeNode").attr("in", "coloredBlur");
       feMerge.append("feMergeNode").attr("in", "SourceGraphic");
 
       const masteredGlow = defs.append("filter")
-          .attr("id", "mastered-glow");
+        .attr("id", "mastered-glow");
       masteredGlow.append("feGaussianBlur").attr("stdDeviation", "4").attr("result", "blur");
       masteredGlow.append("feComponentTransfer").attr("in", "blur").attr("result", "boost")
-          .append("feFuncA").attr("type", "linear").attr("slope", "2");
+        .append("feFuncA").attr("type", "linear").attr("slope", "2");
       const feMergeMastered = masteredGlow.append("feMerge");
       feMergeMastered.append("feMergeNode").attr("in", "boost");
       feMergeMastered.append("feMergeNode").attr("in", "SourceGraphic");
 
       gRef.current = svg.append("g");
-      
-      zoomRef.current = d3.zoom()
-          .scaleExtent([0.2, 5])
-          .on("zoom", (event: any) => {
-              gRef.current.attr("transform", event.transform);
-          });
-      
+
+      zoomRef.current = d3.zoom<SVGSVGElement, unknown>()
+        .scaleExtent([0.1, 4]) // Allow zooming out more
+        .on("zoom", (event) => {
+          gRef.current?.attr("transform", event.transform.toString());
+        });
+
       svg.call(zoomRef.current);
-      initialTransformRef.current = d3.zoomIdentity.translate(width / 2, height / 2);
+      initialTransformRef.current = d3.zoomIdentity.translate(width / 2, height / 2).scale(0.8); // Start slightly zoomed out
       svg.call(zoomRef.current.transform, initialTransformRef.current);
     }
-    
-    const g = gRef.current;
 
-    initialTransformRef.current = d3.zoomIdentity.translate(width / 2, height / 2).scale(d3.zoomTransform(svg.node()).k);
-    
+    const g = gRef.current;
+    if (!g) return;
+
+    // Re-center if needed, but usually we want to preserve user pan/zoom unless reset
+    // initialTransformRef.current = d3.zoomIdentity.translate(width / 2, height / 2).scale(d3.zoomTransform(svg.node()!).k);
+
     const colorScale = d3.scaleOrdinal(d3.schemePaired);
 
     const update = (source: any) => {
-      const duration = 350;
+      const duration = 400;
       const nodes = root.descendants().reverse();
       const links = root.links();
-      
+
       treeLayout(root);
 
-      const link = g.selectAll(".link")
+      const link = g.selectAll<SVGPathElement, d3.HierarchyLink<TreeNode>>(".link")
         .data(links, (d: any) => d.target.data.id);
 
       const linkEnter = link.enter().append("path")
         .attr("class", "link")
         .attr("d", () => {
-          const o = { x: source.x0, y: source.y0 };
-          return d3.linkRadial()({ source: o, target: o });
+          const o = { x: source.x0 || source.x, y: source.y0 || source.y };
+          return d3.linkRadial()
+            .angle((d: any) => d.x)
+            .radius((d: any) => d.y)({ source: o, target: o } as any);
         });
 
       link.merge(linkEnter).transition().duration(duration)
-        .attr("d", d3.linkRadial().angle((d: any) => d.x).radius((d: any) => d.y))
+        .attr("d", d3.linkRadial<any, d3.HierarchyPointNode<TreeNode>>()
+          .angle(d => d.x)
+          .radius(d => d.y) as any
+        )
         .attr("fill", "none")
-        .attr("stroke", "#555")
-        .attr("stroke-opacity", 0.6)
+        .attr("stroke", "#475569") // Slate 600
+        .attr("stroke-opacity", 0.4)
         .attr("stroke-width", 1.5);
-      
+
       link.exit().transition().duration(duration)
         .attr("d", () => {
           const o = { x: source.x, y: source.y };
-          return d3.linkRadial()({ source: o, target: o });
+          return d3.linkRadial()
+            .angle((d: any) => d.x)
+            .radius((d: any) => d.y)({ source: o, target: o } as any);
         }).remove();
 
-      const node = g.selectAll(".node")
+      const node = g.selectAll<SVGGElement, d3.HierarchyPointNode<TreeNode>>(".node")
         .data(nodes, (d: any) => d.data.id);
-      
+
       const nodeEnter = node.enter().append("g")
         .attr("class", "node")
-        .attr("transform", `translate(${d3.pointRadial(source.x0, source.y0)})`)
+        .attr("transform", `translate(${d3.pointRadial(source.x0 || source.x, source.y0 || source.y)})`)
         .on("click", (event: MouseEvent, d: any) => {
           if (event.ctrlKey || event.metaKey) {
-             toggleChildren(d);
-             update(d);
+            toggleChildren(d);
+            update(d);
           }
           onNodeSelect(d.data);
-          event.stopPropagation();
+        })
+        .on("mouseover", function (event: MouseEvent, d: any) {
+          d3.select(this).select("circle").transition().duration(200).attr("r", 10).style("fill", "#22d3ee");
+          d3.select(this).select("rect").transition().duration(200).style("fill-opacity", 0.9);
+          d3.select(this).select("text").transition().duration(200).style("fill", "#fff");
+        })
+        .on("mouseout", function (event: MouseEvent, d: any) {
+          const isMastered = masteredSet.has(d.data.id);
+          d3.select(this).select("circle").transition().duration(200).attr("r", 6).style("fill", isMastered ? "#4ade80" : (d.children || d._children ? "#c084fc" : "#94a3b8"));
+          d3.select(this).select("rect").transition().duration(200).style("fill-opacity", 0.7);
+          d3.select(this).select("text").transition().duration(200).style("fill", "#f1f5f9");
         });
 
       nodeEnter.append("circle")
-        .attr("r", 0)
-        .attr("stroke-width", 2.5);
-      
+        .attr("r", 1e-6)
+        .style("fill", (d: any) => {
+          if (masteredSet.has(d.data.id)) return "#4ade80"; // Green for mastered
+          return d.children || d._children ? "#c084fc" : "#94a3b8"; // Purple for parents, slate for leaves
+        })
+        .style("stroke", "#0f172a")
+        .style("stroke-width", 2)
+        .style("filter", (d: any) => masteredSet.has(d.data.id) ? "url(#mastered-glow)" : (d.children || d._children ? "url(#glow)" : "none"));
+
+      // Text Background Pill
+      nodeEnter.append("rect")
+        .attr("rx", 4)
+        .attr("ry", 4)
+        .attr("height", 20)
+        .style("fill", "#0f172a")
+        .style("fill-opacity", 0) // Start invisible
+        .style("stroke", "none");
+
       nodeEnter.append("text")
         .attr("dy", "0.31em")
         .text((d: any) => d.data.name)
-        .attr("paint-order", "stroke")
-        .attr("stroke", "#111827")
-        .attr("stroke-width", 3.5)
-        .attr("fill", "#e5e7eb");
+        .style("fill-opacity", 1e-6)
+        .style("font-family", "'Outfit', sans-serif")
+        .style("font-size", "13px")
+        .style("font-weight", "500")
+        .style("fill", "#f1f5f9")
+        .style("pointer-events", "none");
 
       const nodeUpdate = node.merge(nodeEnter);
 
       nodeUpdate.transition().duration(duration)
         .attr("transform", (d: any) => `translate(${d3.pointRadial(d.x, d.y)})`);
-        
+
       nodeUpdate.select("circle")
         .transition().duration(duration)
-        .attr("r", (d:any) => d.data.isApplication ? 9 : (d.depth === 0 ? 10 : 7))
-        .attr("fill", (d: any) => d._children ? colorScale(d.parent ? d.parent.data.id : d.data.id) : (d.data.isApplication ? "#facc15" : "#4b5563"))
-        .attr("stroke", (d: any) => masteredSet.has(d.data.id) ? '#00f2ff' : (d.data.isApplication ? "#f59e0b" : "#9ca3af"))
-        .style("filter", (d: any) => masteredSet.has(d.data.id) ? 'url(#mastered-glow)' : null);
+        .attr("r", 6) // Slightly larger nodes
+        .style("fill", (d: any) => {
+          if (masteredSet.has(d.data.id)) return "#4ade80";
+          return d.children || d._children ? "#c084fc" : "#94a3b8";
+        })
+        .style("filter", (d: any) => masteredSet.has(d.data.id) ? "url(#mastered-glow)" : (d.children || d._children ? "url(#glow)" : "none"));
 
+      // Update Text and Pill Position
+      nodeUpdate.each(function (d: any) {
+        const group = d3.select(this);
+        const text = group.select("text");
+        const rect = group.select("rect");
 
-      nodeUpdate.select("text")
-        .transition().duration(duration)
-        .attr("x", (d: any) => (d.x < Math.PI) === !d.children ? 14 : -14)
-        .attr("text-anchor", (d: any) => (d.x < Math.PI) === !d.children ? "start" : "end")
-        .attr("transform", (d: any) => d.x >= Math.PI ? "rotate(180)" : null);
+        const angle = (d.x * 180 / Math.PI - 90);
+        const isLeft = d.x >= Math.PI;
+
+        // Calculate text width (approximate or use getBBox if possible, but tricky in transition)
+        // Using a simple estimation for now: character count * 7px
+        const textWidth = d.data.name.length * 7 + 16;
+
+        text
+          .transition().duration(duration)
+          .style("fill-opacity", 1)
+          .attr("transform", `rotate(${angle}) ${isLeft ? "rotate(180)" : ""}`)
+          .attr("text-anchor", isLeft ? "end" : "start")
+          .attr("x", isLeft ? -12 : 12);
+
+        rect
+          .transition().duration(duration)
+          .attr("width", textWidth)
+          .attr("transform", `rotate(${angle}) ${isLeft ? "rotate(180) translate(-" + (textWidth + 8) + ", -10)" : "translate(8, -10)"}`)
+          .style("fill-opacity", 0.7);
+      });
 
       const nodeExit = node.exit().transition().duration(duration)
         .attr("transform", `translate(${d3.pointRadial(source.x, source.y)})`).remove();
-      
-      nodeExit.select("circle").attr("r", 0);
-      nodeExit.select("text").attr("fill-opacity", 0);
+
+      nodeExit.select("circle").attr("r", 1e-6);
+      nodeExit.select("text").style("fill-opacity", 1e-6);
+      nodeExit.select("rect").style("fill-opacity", 1e-6);
 
       root.eachBefore((d: any) => {
         d.x0 = d.x;
@@ -178,29 +240,29 @@ const AITreeDiagram: React.FC<{
         d._children = null;
       }
     };
-    
+
     if (!rootNodeRef.current) {
-        root.x0 = height / 2;
-        root.y0 = 0;
-        update(root);
-        rootNodeRef.current = root;
+      (root as any).x0 = height / 2;
+      (root as any).y0 = 0;
+      update(root);
+      rootNodeRef.current = root as any;
     } else {
-        // This handles re-renders due to mastery changes
-        update(root);
+      // This handles re-renders due to mastery changes
+      update(root);
     }
-    
+
     const resizeObserver = new ResizeObserver(entries => {
-      if (!entries || !entries.length || !gRef.current) return;
+      if (!entries || !entries.length || !gRef.current || !zoomRef.current) return;
       const { width, height } = entries[0].contentRect;
       initialTransformRef.current = d3.zoomIdentity.translate(width / 2, height / 2);
       svg.transition().duration(500).call(zoomRef.current.transform, initialTransformRef.current);
     });
-    if(containerRef.current) {
+    if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
     }
     return () => resizeObserver.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, masteredNodes]); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, masteredNodes]);
 
   // Effect for handling search term changes
   useEffect(() => {
@@ -209,16 +271,16 @@ const AITreeDiagram: React.FC<{
     const term = searchTerm.toLowerCase().trim();
 
     if (!term) {
-        g.selectAll(".node").attr("opacity", 1).style("filter", (d:any) => masteredSet.has(d.data.id) ? 'url(#mastered-glow)' : null);
-        g.selectAll(".link").attr("stroke-opacity", 0.6);
-        return;
+      g.selectAll(".node").attr("opacity", 1).style("filter", (d: any) => masteredSet.has(d.data.id) ? 'url(#mastered-glow)' : null);
+      g.selectAll(".link").attr("stroke-opacity", 0.6);
+      return;
     }
 
     const matchingNodes = new Set();
     root.each((d: any) => {
       if (d.data.name.toLowerCase().includes(term)) {
         let current = d;
-        while(current) {
+        while (current) {
           matchingNodes.add(current.data.id);
           current = current.parent;
         }
@@ -226,17 +288,17 @@ const AITreeDiagram: React.FC<{
     });
 
     g.selectAll(".node")
-        .attr("opacity", (d:any) => matchingNodes.has(d.data.id) ? 1 : 0.2)
-        .style("filter", (d: any) => {
-          const isDirectMatch = root.descendants().find(n => n.data.id === d.data.id && n.data.name.toLowerCase().includes(term));
-          if (isDirectMatch) return "url(#glow)";
-          if (masteredSet.has(d.data.id)) return 'url(#mastered-glow)';
-          return null;
-        });
-        
+      .attr("opacity", (d: any) => matchingNodes.has(d.data.id) ? 1 : 0.2)
+      .style("filter", (d: any) => {
+        const isDirectMatch = root.descendants().find(n => n.data.id === d.data.id && n.data.name.toLowerCase().includes(term));
+        if (isDirectMatch) return "url(#glow)";
+        if (masteredSet.has(d.data.id)) return 'url(#mastered-glow)';
+        return null;
+      });
+
     g.selectAll(".link")
       .attr("stroke-opacity", (d: any) => matchingNodes.has(d.source.data.id) && matchingNodes.has(d.target.data.id) ? 0.9 : 0.1);
-      
+
   }, [searchTerm, root, masteredSet]);
 
   // Effect for resetting view
@@ -255,5 +317,3 @@ const AITreeDiagram: React.FC<{
     </div>
   );
 };
-
-export default AITreeDiagram;
