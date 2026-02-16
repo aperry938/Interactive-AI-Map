@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-900">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Concept Map - Interactive Learning Journey</title>
+    <meta name="description"
+        content="Explore the vast universe of Artificial Intelligence. Visualize connections between Machine Learning, Robotics, and more in an interactive 3D-like map.">
+    <meta name="keywords"
+        content="AI, Artificial Intelligence, Machine Learning, Deep Learning, Neural Networks, Interactive Map, Education">
+    <meta name="theme-color" content="#111827">
+    <meta property="og:title" content="AI Concept Map - Interactive Learning Journey">
+    <meta property="og:description"
+        content="Explore the vast universe of Artificial Intelligence. Visualize connections between Machine Learning, Robotics, and more.">
+    <meta property="og:type" content="website">
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gray: {
+                            850: '#1f2937', // Custom dark gray
+                            900: '#111827',
+                            950: '#030712',
+                        },
+                        cyan: {
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                        },
+                        purple: {
+                            500: '#a855f7',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Load D3.js -->
+    <!-- Load D3.js (Removed in favor of npm package) -->
+    <style>
+        /* Custom styles for the visualization */
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+            overflow: hidden;
+            /* Prevent scrolling */
+        }
+
+        /* Style for the links (lines) */
+        .link {
+            stroke-opacity: 0.6;
+        }
+
+        /* Style for the link labels (relationship type) */
+        .link-label {
+            font-size: 8px;
+            fill: #aaa;
+            text-anchor: middle;
+        }
+
+        /* Style for the nodes (circles) */
+        .node {
+            stroke: #fff;
+            stroke-width: 1.5px;
+            cursor: pointer;
+        }
+
+        /* Style for the node labels (text) */
+        .label {
+            font-size: 14px;
+            fill: #e0e0e0;
+            text-anchor: middle;
+            pointer-events: none;
+            /* Allows dragging the circle underneath */
+            /* Add a slight stroke for readability against complex backgrounds */
+            paint-order: stroke;
+            stroke: #111827;
+            /* Page background color */
+            stroke-width: 4px;
+            stroke-linecap: butt;
+            stroke-linejoin: miter;
+        }
+
+        /* Tooltip style */
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            padding: 8px;
+            font-size: 12px;
+            background: #f0f0f0;
+            color: #111;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        #ai-map {
+            cursor: grab;
+        }
+
+        #ai-map:active {
+            cursor: grabbing;
+        }
+    </style>
+
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+  }
+}
+</script>
+  <script type="module" crossorigin src="/Interactive-AI-Map/assets/index-C-Coyb89.js"></script>
+  <link rel="stylesheet" crossorigin href="/Interactive-AI-Map/assets/index-0SK6tc3O.css">
+</head>
+
+<body class="h-full bg-gray-900 text-gray-100 overflow-hidden">
+    <div id="root" class="h-full"></div>
+</body>
+
+</html>
