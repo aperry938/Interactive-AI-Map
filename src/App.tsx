@@ -1,120 +1,100 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { AITreeDiagram } from './components/features/AITreeDiagram';
-import { aiConceptsData } from './data/aiConcepts';
-import type { TreeNode } from './types';
-import { Controls } from './components/features/Controls';
-import { NodeDetailModal } from './components/features/NodeDetailModal';
-import { LandingPage } from './pages/LandingPage';
-import { CompletionView } from './components/features/CompletionView';
-import { SettingsModal } from './components/features/SettingsModal';
+import React, { useEffect } from 'react';
+import { LearnerProvider } from './stores/LearnerProvider';
+import { MainLayout } from './components/layout/MainLayout';
+import { AmbientBackground } from './components/ui/AmbientBackground';
+import { AppRouter } from './router/AppRouter';
+import { useTheme } from './hooks/useTheme';
+import { useLearner } from './stores/learnerStore';
+import { OnboardingQuestionnaire } from './components/features/OnboardingQuestionnaire';
+import { mapOnboardingToMastery } from './engine/onboarding';
+import { curriculum } from './data/curriculum';
+import { ToastContext, useToastState } from './hooks/useToast';
+import { ToastContainer } from './components/ui/Toast';
+import { KeyboardShortcuts } from './components/ui/KeyboardShortcuts';
+import { createTelemetryEvent } from './services/telemetry';
+import type { OnboardingProfile } from './types';
 
-const App: React.FC = () => {
-  const [hasStarted, setHasStarted] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedNode, setSelectedNode] = useState<TreeNode | null>(null);
-  const [resetViewToggle, setResetViewToggle] = useState(false);
-  const [masteredNodes, setMasteredNodes] = useState<string[]>(() => {
-    const saved = localStorage.getItem('masteredNodes');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+const AppInner: React.FC = () => {
+  const { isDark, toggle: toggleTheme } = useTheme();
+  const { profile, setOnboarding, logTelemetryEvent, applyForgettingAll } = useLearner();
 
+  // Log session start
   useEffect(() => {
-    localStorage.setItem('masteredNodes', JSON.stringify(masteredNodes));
-  }, [masteredNodes]);
-
-  const allNodeIds = useMemo(() => {
-    const ids: string[] = [];
-    function traverse(node: TreeNode) {
-      if (node.quiz) ids.push(node.id);
-      if (node.children) node.children.forEach(traverse);
-    }
-    traverse(aiConceptsData);
-    return ids;
+    logTelemetryEvent(createTelemetryEvent('session_start'));
+    const handleUnload = () => {
+      // Write session_end event directly to localStorage since reducer may not complete
+      try {
+        const stored = localStorage.getItem('ai-learning-platform-learner');
+        if (stored) {
+          const data = JSON.parse(stored);
+          if (data.telemetryLog) {
+            data.telemetryLog.push({ type: 'session_end', timestamp: Date.now(), data: {} });
+            localStorage.setItem('ai-learning-platform-learner', JSON.stringify(data));
+          }
+        }
+      } catch { /* best-effort — ignore storage errors on unload */ }
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
   }, []);
 
-  const progress = useMemo(() => {
-    if (allNodeIds.length === 0) return 0;
-    const masteredCount = masteredNodes.length;
-    return (masteredCount / allNodeIds.length) * 100;
-  }, [masteredNodes, allNodeIds]);
+  // Apply forgetting model on mount — decays mastery when learner returns after absence
+  useEffect(() => {
+    applyForgettingAll();
+  }, []);
 
-  const isComplete = progress === 100 && allNodeIds.length > 0;
-
-  const handleNodeSelect = (node: TreeNode | null) => {
-    setSelectedNode(node);
+  const handleOnboardingComplete = (onboardingProfile: OnboardingProfile) => {
+    const masteryUpdates = mapOnboardingToMastery(onboardingProfile, curriculum);
+    setOnboarding(onboardingProfile, masteryUpdates);
   };
 
-  const handleMasterNode = (nodeId: string) => {
-    if (!masteredNodes.includes(nodeId)) {
-      setMasteredNodes(prev => [...prev, nodeId]);
-    }
+  const handleOnboardingSkip = () => {
+    const defaultProfile: OnboardingProfile = {
+      experienceLevel: 'beginner',
+      mathComfort: 1,
+      programmingLevel: 'none',
+      mlFamiliarity: [],
+      learningGoal: 'explore',
+      priorCourses: [],
+      completedAt: Date.now(),
+    };
+    setOnboarding(defaultProfile, {});
   };
 
-  const handleRestart = () => {
-    if (window.confirm("Are you sure you want to reset your progress?")) {
-      setMasteredNodes([]);
-      setHasStarted(false);
-    }
-  }
-
-  if (!hasStarted) {
-    return <LandingPage onStart={() => setHasStarted(true)} />;
-  }
-
-  if (isComplete) {
-    return <CompletionView onReset={handleRestart} />
+  // Show onboarding for first-time users
+  if (!profile.onboardingProfile) {
+    return (
+      <>
+        <AmbientBackground />
+        <OnboardingQuestionnaire
+          onComplete={handleOnboardingComplete}
+          onSkip={handleOnboardingSkip}
+        />
+      </>
+    );
   }
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-[#030712]">
-      <div className="absolute top-4 left-4 z-10 flex gap-4">
-        <Controls
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          onResetView={() => setResetViewToggle(!resetViewToggle)}
-        />
-      </div>
+    <>
+      <AmbientBackground />
+      <MainLayout isDark={isDark} onToggleTheme={toggleTheme}>
+        <AppRouter />
+      </MainLayout>
+      <KeyboardShortcuts />
+    </>
+  );
+};
 
-      <div className="absolute top-4 right-4 z-10">
-        <button
-          onClick={() => setIsSettingsOpen(true)}
-          className="p-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-400 hover:text-cyan-400 rounded-lg border border-gray-700 backdrop-blur-sm transition-all"
-          title="Settings"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        </button>
-      </div>
+const App: React.FC = () => {
+  const toastState = useToastState();
 
-      <div className="absolute bottom-4 left-4 z-10 text-white/50 text-sm font-mono">
-        Mastery: {masteredNodes.length} / {allNodeIds.length}
-      </div>
-
-      <AITreeDiagram
-        data={aiConceptsData}
-        searchTerm={searchTerm}
-        onNodeSelect={handleNodeSelect}
-        resetViewToggle={resetViewToggle}
-        masteredNodes={masteredNodes}
-      />
-
-      {selectedNode && (
-        <NodeDetailModal
-          node={selectedNode}
-          isMastered={masteredNodes.includes(selectedNode.id)}
-          onClose={() => setSelectedNode(null)}
-          onMaster={handleMasterNode}
-        />
-      )}
-
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-      />
-    </div>
+  return (
+    <ToastContext.Provider value={toastState}>
+      <LearnerProvider>
+        <AppInner />
+        <ToastContainer toasts={toastState.toasts} onRemove={toastState.removeToast} />
+      </LearnerProvider>
+    </ToastContext.Provider>
   );
 };
 

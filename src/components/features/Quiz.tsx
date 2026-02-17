@@ -17,39 +17,59 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({ quiz, onComplete }
     };
 
     return (
-        <div className="mt-6 border-t border-cyan-400/20 pt-4">
-            <h3 className="font-semibold text-lg text-white mb-2">{quiz.question}</h3>
-            <div className="space-y-2">
+        <div role="group" aria-labelledby="quiz-question">
+            <h3 id="quiz-question" className="font-medium text-sm text-her-dark dark:text-her-cream mb-3">{quiz.question}</h3>
+            <div className="space-y-2" role="radiogroup" aria-label="Answer options">
                 {quiz.options.map((option) => {
                     const isCorrect = option === quiz.correctAnswer;
                     const isSelected = option === selectedAnswer;
-                    let buttonClass = "w-full text-left p-3 rounded-lg border transition-all duration-200 ";
+
+                    let classes = "w-full text-left p-3 rounded-lg border text-sm transition-all duration-200 ";
                     if (isSubmitted) {
                         if (isCorrect) {
-                            buttonClass += "bg-green-500/30 border-green-400 text-white";
+                            classes += "border-emerald-500/50 bg-emerald-500/5 text-emerald-500";
                         } else if (isSelected) {
-                            buttonClass += "bg-red-500/30 border-red-400 text-white";
+                            classes += "border-red-500/50 bg-red-500/5 text-red-500";
                         } else {
-                            buttonClass += "bg-gray-700 border-gray-600 text-gray-400";
+                            classes += "border-her-dark/10 dark:border-white/10 text-her-dark/40 dark:text-her-cream/40";
                         }
                     } else {
                         if (isSelected) {
-                            buttonClass += "bg-cyan-500/30 border-cyan-400 text-white";
+                            classes += "border-her-red/50 bg-her-red/5 text-her-dark dark:text-her-cream";
                         } else {
-                            buttonClass += "bg-gray-700/50 border-gray-600 hover:bg-gray-700";
+                            classes += "border-her-dark/10 dark:border-white/10 text-her-dark/70 dark:text-her-cream/70 hover:border-her-dark/20 dark:hover:border-white/20";
                         }
                     }
+
                     return (
-                        <button key={option} onClick={() => !isSubmitted && setSelectedAnswer(option)} disabled={isSubmitted} className={buttonClass}>
+                        <button
+                            key={option}
+                            onClick={() => !isSubmitted && setSelectedAnswer(option)}
+                            disabled={isSubmitted}
+                            className={classes}
+                        >
                             {option}
                         </button>
-                    )
+                    );
                 })}
             </div>
+
             {!isSubmitted && (
-                <button onClick={handleSubmit} disabled={selectedAnswer === null} className="mt-4 w-full font-bold py-2 px-4 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-gray-900 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
+                <button
+                    onClick={handleSubmit}
+                    disabled={selectedAnswer === null}
+                    className="mt-3 w-full py-2.5 px-4 bg-white dark:bg-white/15 text-her-dark dark:text-her-cream text-sm font-medium rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
                     Submit Answer
                 </button>
+            )}
+
+            {isSubmitted && quiz.explanation && (
+                <div className="mt-3 p-3 glass rounded-2xl">
+                    <p className="font-serif text-xs text-her-dark/60 dark:text-her-cream/60 leading-relaxed">
+                        {quiz.explanation}
+                    </p>
+                </div>
             )}
         </div>
     );

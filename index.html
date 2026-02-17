@@ -1,127 +1,31 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-gray-900">
+<html lang="en" class="h-full dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Concept Map - Interactive Learning Journey</title>
+    <title>Interactive AI/ML Concept Explorer | Anthony C. Perry</title>
     <meta name="description"
-        content="Explore the vast universe of Artificial Intelligence. Visualize connections between Machine Learning, Robotics, and more in an interactive 3D-like map.">
+        content="An explorable explanation of artificial intelligence — from linear regression to transformers. Grounded in cognitive load theory and multi-level interactive abstraction.">
     <meta name="keywords"
-        content="AI, Artificial Intelligence, Machine Learning, Deep Learning, Neural Networks, Interactive Map, Education">
-    <meta name="theme-color" content="#111827">
-    <meta property="og:title" content="AI Concept Map - Interactive Learning Journey">
+        content="AI education, machine learning visualization, interactive learning, explorable explanation, concept map, deep learning, neural networks">
+    <meta name="author" content="Anthony C. Perry">
+    <meta name="theme-color" content="#0F0A0A">
+    <meta property="og:title" content="Interactive AI/ML Concept Explorer | Anthony C. Perry">
     <meta property="og:description"
-        content="Explore the vast universe of Artificial Intelligence. Visualize connections between Machine Learning, Robotics, and more.">
+        content="An explorable explanation of artificial intelligence — from linear regression to transformers.">
     <meta property="og:type" content="website">
-    <!-- Load Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        gray: {
-                            850: '#1f2937', // Custom dark gray
-                            900: '#111827',
-                            950: '#030712',
-                        },
-                        cyan: {
-                            400: '#22d3ee',
-                            500: '#06b6d4',
-                        },
-                        purple: {
-                            500: '#a855f7',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Outfit', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- Load D3.js -->
-    <!-- Load D3.js (Removed in favor of npm package) -->
-    <style>
-        /* Custom styles for the visualization */
-        body {
-            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-            overflow: hidden;
-            /* Prevent scrolling */
-        }
+    <meta property="og:url" content="https://aperry938.github.io/Interactive-AI-Map/">
 
-        /* Style for the links (lines) */
-        .link {
-            stroke-opacity: 0.6;
-        }
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 
-        /* Style for the link labels (relationship type) */
-        .link-label {
-            font-size: 8px;
-            fill: #aaa;
-            text-anchor: middle;
-        }
-
-        /* Style for the nodes (circles) */
-        .node {
-            stroke: #fff;
-            stroke-width: 1.5px;
-            cursor: pointer;
-        }
-
-        /* Style for the node labels (text) */
-        .label {
-            font-size: 14px;
-            fill: #e0e0e0;
-            text-anchor: middle;
-            pointer-events: none;
-            /* Allows dragging the circle underneath */
-            /* Add a slight stroke for readability against complex backgrounds */
-            paint-order: stroke;
-            stroke: #111827;
-            /* Page background color */
-            stroke-width: 4px;
-            stroke-linecap: butt;
-            stroke-linejoin: miter;
-        }
-
-        /* Tooltip style */
-        .tooltip {
-            position: absolute;
-            text-align: center;
-            padding: 8px;
-            font-size: 12px;
-            background: #f0f0f0;
-            color: #111;
-            border: 0px;
-            border-radius: 8px;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        #ai-map {
-            cursor: grab;
-        }
-
-        #ai-map:active {
-            cursor: grabbing;
-        }
-    </style>
-    <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/"
-  }
-}
-</script>
+    <!-- Tailwind CSS is processed by Vite/PostCSS -->
 </head>
 
-<body class="h-full bg-gray-900 text-gray-100 overflow-hidden">
+<body class="h-full bg-her-cream dark:bg-[#0F0A0A] text-her-dark/90 dark:text-her-cream/90 overflow-x-hidden transition-colors duration-300">
     <div id="root" class="h-full"></div>
     <script type="module" src="./src/index.tsx"></script>
 </body>

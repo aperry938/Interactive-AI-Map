@@ -1,106 +1,700 @@
-import React, { useState } from 'react';
-import type { TreeNode } from '../../types';
-import { QuizComponent } from './Quiz';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import type { Tier, Difficulty } from '../../types';
+import { TIER_CONFIG, MASTERY_THRESHOLD } from '../../types';
+import { curriculum } from '../../data/curriculum';
+import { Badge } from '../ui/Badge';
+import { CodeBlock } from '../ui/CodeBlock';
+import { useLearner } from '../../stores/learnerStore';
+import { updateMastery, isMastered } from '../../engine/bkt';
+import { selectDifficulty } from '../../engine/difficultyAdjuster';
+import { computeNextReview } from '../../engine/spacedRepetition';
+import { DEFAULT_BKT_PARAMS } from '../../types';
 import { generateInsight } from '../../services/gemini';
+import { createTelemetryEvent } from '../../services/telemetry';
+import { useToast } from '../../hooks/useToast';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 
 interface NodeDetailModalProps {
-    node: TreeNode;
-    isMastered: boolean;
-    onClose: () => void;
-    onMaster: (nodeId: string) => void;
+  conceptId: string;
+  onClose: () => void;
+  onOpenExploration?: (explorationId: string) => void;
 }
 
-export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({ node, isMastered, onClose, onMaster }) => {
-    const [showQuiz, setShowQuiz] = useState(false);
-    const [quizResult, setQuizResult] = useState<boolean | null>(null);
-    const [aiInsight, setAiInsight] = useState<string | null>(null);
-    const [isLoadingAI, setIsLoadingAI] = useState(false);
+const AccordionSection: React.FC<{
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}> = ({ title, defaultOpen = false, children }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const contentRef = useRef<HTMLDivElement>(null);
 
-    const handleQuizComplete = (correct: boolean) => {
-        setQuizResult(correct);
-        if (correct) {
-            onMaster(node.id);
-        }
+  return (
+    <div className="border-t border-her-dark/5 dark:border-white/5">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between py-3 text-left group"
+      >
+        <span className="text-sm font-medium text-her-dark/70 dark:text-her-cream/70 group-hover:text-her-red transition-colors">
+          {title}
+        </span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className={`h-4 w-4 text-her-dark/30 dark:text-her-cream/30 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div
+        ref={contentRef}
+        className="accordion-content"
+        style={{
+          maxHeight: isOpen ? `${contentRef.current?.scrollHeight || 1000}px` : '0px',
+          opacity: isOpen ? 1 : 0,
+        }}
+      >
+        <div className="pb-4">{children}</div>
+      </div>
+    </div>
+  );
+};
+
+const MathDisplay: React.FC<{ latex: string }> = ({ latex }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (ref.current) {
+      try {
+        katex.render(latex, ref.current, { displayMode: true, throwOnError: false });
+      } catch {
+        if (ref.current) ref.current.textContent = latex;
+      }
+    }
+  }, [latex]);
+  return <div ref={ref} className="my-3" />;
+};
+
+const MasteryGauge: React.FC<{ mastery: number }> = ({ mastery }) => {
+  const pct = Math.round(mastery * 100);
+  const circumference = 2 * Math.PI * 36;
+  const offset = circumference - (mastery * circumference);
+
+  return (
+    <div className="relative w-24 h-24 mx-auto">
+      <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
+        <circle cx="40" cy="40" r="36" fill="none" stroke="rgba(44,26,26,0.08)" className="dark:hidden" strokeWidth="5" />
+        <circle cx="40" cy="40" r="36" fill="none" stroke="rgba(255,255,255,0.06)" className="hidden dark:block" strokeWidth="5" />
+        <circle
+          cx="40" cy="40" r="36" fill="none"
+          stroke="#D94436" strokeWidth="5" strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          style={{ transition: 'stroke-dashoffset 0.5s ease', opacity: 0.7 }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-lg font-light text-her-dark/70 dark:text-her-cream/70">{pct}%</span>
+      </div>
+    </div>
+  );
+};
+
+export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
+  conceptId,
+  onClose,
+  onOpenExploration,
+}) => {
+  const concept = curriculum[conceptId];
+  const { getMastery, getConceptState, recordAttempt, updateMastery: setMastery, setNextReview, markExplored, logTelemetryEvent } = useLearner();
+  const toast = useToast();
+  const addToast = toast.addToast;
+  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(1);
+  const [quizIndex, setQuizIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [fillBlankAnswer, setFillBlankAnswer] = useState('');
+  const [orderingItems, setOrderingItems] = useState<string[]>([]);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [hintsRevealed, setHintsRevealed] = useState(0);
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [consecutiveIncorrect, setConsecutiveIncorrect] = useState(0);
+  const [orderingAnnouncement, setOrderingAnnouncement] = useState('');
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  const mastery = getMastery(conceptId);
+  const conceptState = getConceptState(conceptId);
+  const mastered = isMastered(mastery);
+
+  // Focus trap
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement as HTMLElement;
+    const timer = setTimeout(() => {
+      const closeBtn = modalRef.current?.querySelector<HTMLElement>('[aria-label="Close Panel"]');
+      closeBtn?.focus();
+    }, 50);
+    return () => {
+      clearTimeout(timer);
+      previousFocusRef.current?.focus();
+    };
+  }, []);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onClose();
+      return;
+    }
+    if (e.key === 'Tab') {
+      const focusable = modalRef.current?.querySelectorAll<HTMLElement>(
+        'button, input, a, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusable || focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!concept) return;
+    markExplored(conceptId);
+    logTelemetryEvent(createTelemetryEvent('concept_open', { conceptId, tier: concept.tier }));
+    const recommended = selectDifficulty(mastery, conceptState.attemptHistory);
+    setSelectedDifficulty(recommended);
+  }, [conceptId]);
+
+  // Get quizzes for selected difficulty
+  const availableQuizzes = concept ? concept.quizzes.filter(q => q.difficulty === selectedDifficulty) : [];
+  const currentQuiz = availableQuizzes[quizIndex % Math.max(1, availableQuizzes.length)] ?? null;
+
+  // Initialize ordering items when quiz changes
+  useEffect(() => {
+    if (currentQuiz?.type === 'ordering' && Array.isArray(currentQuiz.correctAnswer)) {
+      const shuffled = [...currentQuiz.correctAnswer].sort(() => Math.random() - 0.5);
+      setOrderingItems(shuffled);
+    }
+  }, [currentQuiz?.id]);
+
+  if (!concept) return null;
+
+  const isQuizAnswered = (): boolean => {
+    if (!currentQuiz) return false;
+    if (currentQuiz.type === 'multiple-choice') return selectedAnswer !== null;
+    if (currentQuiz.type === 'fill-blank') return fillBlankAnswer.trim().length > 0;
+    if (currentQuiz.type === 'ordering') return orderingItems.length > 0;
+    return false;
+  };
+
+  const isQuizCorrect = (): boolean => {
+    if (!currentQuiz) return false;
+    if (currentQuiz.type === 'multiple-choice') return selectedAnswer === currentQuiz.correctAnswer;
+    if (currentQuiz.type === 'fill-blank') {
+      const userAnswer = fillBlankAnswer.trim().toLowerCase().replace(/\s+/g, ' ');
+      const correct = (currentQuiz.correctAnswer as string).toLowerCase().replace(/\s+/g, ' ');
+      return userAnswer === correct;
+    }
+    if (currentQuiz.type === 'ordering' && Array.isArray(currentQuiz.correctAnswer)) {
+      return JSON.stringify(orderingItems) === JSON.stringify(currentQuiz.correctAnswer);
+    }
+    return false;
+  };
+
+  const handleQuizSubmit = () => {
+    if (!currentQuiz || !isQuizAnswered()) return;
+    const correct = isQuizCorrect();
+    setQuizSubmitted(true);
+
+    if (correct) {
+      setConsecutiveIncorrect(0);
+    } else {
+      setConsecutiveIncorrect(prev => prev + 1);
     }
 
-    const handleGenerateInsight = async () => {
-        setIsLoadingAI(true);
-        const insight = await generateInsight(node.name, node.description);
-        setAiInsight(insight);
-        setIsLoadingAI(false);
-    };
+    recordAttempt(conceptId, correct, selectedDifficulty, hintsRevealed);
 
-    return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 flex items-center justify-center" onClick={onClose}>
-            <div
-                className="w-full max-w-2xl bg-gray-800/80 border border-gray-700 rounded-xl shadow-2xl m-4 transform transition-all duration-300 ease-in-out"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="p-6 max-h-[80vh] overflow-y-auto">
-                    <div className="flex justify-between items-start">
-                        <h2 className="text-2xl font-bold text-cyan-400 pr-4 glow-text">{node.name}</h2>
-                        <button onClick={onClose} className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded-full" aria-label="Close Panel">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                    <div className="mt-4 text-gray-300">
-                        <p className="whitespace-pre-wrap">{node.description || "No description available."}</p>
+    const hintPenalty = Math.pow(0.5, hintsRevealed);
+    const effectiveCorrect = correct && hintPenalty > 0.5;
+    const newMastery = updateMastery(mastery, effectiveCorrect, DEFAULT_BKT_PARAMS);
+    setMastery(conceptId, newMastery);
 
-                        {/* AI Insight Section */}
-                        <div className="mt-6 border-t border-gray-700 pt-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-lg font-semibold text-purple-400 flex items-center gap-2">
-                                    <span className="text-xl">✨</span> AI Insight
-                                </h3>
-                                {!aiInsight && !isLoadingAI && (
-                                    <button
-                                        onClick={handleGenerateInsight}
-                                        className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded-full transition-colors"
-                                    >
-                                        Generate
-                                    </button>
-                                )}
-                            </div>
+    logTelemetryEvent(createTelemetryEvent('quiz_attempt', { conceptId, difficulty: selectedDifficulty, correct, hintsUsed: hintsRevealed, masteryBefore: mastery, masteryAfter: newMastery }));
 
-                            {isLoadingAI ? (
-                                <div className="flex items-center gap-2 text-gray-400 animate-pulse">
-                                    <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                                    Consulting the neural network...
-                                </div>
-                            ) : aiInsight ? (
-                                <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4 text-gray-200 italic">
-                                    "{aiInsight}"
-                                </div>
-                            ) : (
-                                <p className="text-sm text-gray-500">Get a unique, futuristic perspective on this concept powered by Gemini.</p>
-                            )}
-                        </div>
+    if (newMastery >= MASTERY_THRESHOLD && mastery < MASTERY_THRESHOLD) {
+      const tier = concept.tier as number;
+      if (tier >= 5) {
+        addToast(`Remarkable achievement! You've mastered: ${concept.name}!`, 'success');
+      } else if (tier >= 3) {
+        addToast(`Impressive! You've mastered: ${concept.name}!`, 'success');
+      } else {
+        addToast(`Mastered: ${concept.name}!`, 'success');
+      }
+    }
 
-                        {node.link && (
-                            <a href={node.link} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-cyan-400 hover:text-cyan-300 hover:underline">
-                                Learn More &rarr;
-                            </a>
-                        )}
-                        {isMastered ? (
-                            <div className="mt-6 p-3 rounded-lg bg-green-500/20 text-green-300 border border-green-400/50 text-center font-semibold">
-                                ✨ Concept Mastered! ✨
-                            </div>
-                        ) : showQuiz ? (
-                            <QuizComponent quiz={node.quiz!} onComplete={handleQuizComplete} />
-                        ) : node.quiz ? (
-                            <button onClick={() => setShowQuiz(true)} className="mt-6 w-full font-bold py-2 px-4 rounded-lg bg-purple-500 hover:bg-purple-400 text-white transition-colors">
-                                Test Your Knowledge
-                            </button>
-                        ) : null}
+    if (correct) {
+      const newStreak = conceptState.consecutiveCorrect + 1;
+      if (newStreak === 5) {
+        addToast('5 correct streak! Outstanding!', 'success');
+      } else if (newStreak === 3) {
+        addToast("3 in a row! You're building mastery!", 'success');
+      } else {
+        addToast('Nice work!', 'success');
+      }
+    }
 
-                        {quizResult !== null && !quizResult && (
-                            <p className="text-red-400 text-center mt-4">Not quite! Review the material and try again later.</p>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
+    const nextReview = computeNextReview(
+      newMastery,
+      effectiveCorrect ? conceptState.consecutiveCorrect + 1 : 0,
+      Date.now()
     );
+    setNextReview(conceptId, nextReview);
+  };
+
+  const handleNextQuiz = () => {
+    setQuizIndex(prev => prev + 1);
+    setSelectedAnswer(null);
+    setFillBlankAnswer('');
+    setOrderingItems([]);
+    setDragIdx(null);
+    setQuizSubmitted(false);
+    setHintsRevealed(0);
+  };
+
+  const handleOrderingDragStart = (idx: number) => {
+    setDragIdx(idx);
+  };
+
+  const handleOrderingDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    if (dragIdx === null || dragIdx === idx) return;
+    const newItems = [...orderingItems];
+    const [removed] = newItems.splice(dragIdx, 1);
+    newItems.splice(idx, 0, removed);
+    setOrderingItems(newItems);
+    setDragIdx(idx);
+  };
+
+  const handleOrderingKeyDown = (e: React.KeyboardEvent, idx: number) => {
+    if (quizSubmitted) return;
+    if (e.key === 'ArrowUp' && idx > 0) {
+      e.preventDefault();
+      const newItems = [...orderingItems];
+      [newItems[idx - 1], newItems[idx]] = [newItems[idx], newItems[idx - 1]];
+      setOrderingItems(newItems);
+      setOrderingAnnouncement(`${newItems[idx - 1]} moved to position ${idx}. Now at position ${idx} of ${newItems.length}.`);
+      requestAnimationFrame(() => {
+        const container = modalRef.current?.querySelector('[role="listbox"]');
+        const items = container?.querySelectorAll<HTMLElement>('[role="option"]');
+        items?.[idx - 1]?.focus();
+      });
+    } else if (e.key === 'ArrowDown' && idx < orderingItems.length - 1) {
+      e.preventDefault();
+      const newItems = [...orderingItems];
+      [newItems[idx], newItems[idx + 1]] = [newItems[idx + 1], newItems[idx]];
+      setOrderingItems(newItems);
+      setOrderingAnnouncement(`${newItems[idx + 1]} moved to position ${idx + 2}. Now at position ${idx + 2} of ${newItems.length}.`);
+      requestAnimationFrame(() => {
+        const container = modalRef.current?.querySelector('[role="listbox"]');
+        const items = container?.querySelectorAll<HTMLElement>('[role="option"]');
+        items?.[idx + 1]?.focus();
+      });
+    }
+  };
+
+  const lastAttempt = conceptState.attemptHistory.length > 0
+    ? conceptState.attemptHistory[conceptState.attemptHistory.length - 1]
+    : null;
+  const timeSinceReview = lastAttempt
+    ? Math.round((Date.now() - lastAttempt.timestamp) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const prereqs = concept.prerequisites.map(id => curriculum[id]).filter(Boolean);
+
+  const tierColor = TIER_CONFIG[concept.tier as Tier].color;
+
+  const handleGenerateInsight = async () => {
+    setIsLoadingAI(true);
+    const insight = await generateInsight(concept.name, concept.description);
+    setAiInsight(insight);
+    setIsLoadingAI(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/10 dark:bg-black/30 backdrop-blur-[2px] z-40 flex items-start justify-end" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="node-detail-title">
+      <div
+        ref={modalRef}
+        className="h-full w-full max-w-md glass-strong rounded-l-2xl overflow-y-auto animate-slide-in-right"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={handleKeyDown}
+      >
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge tier={concept.tier as Tier} />
+                {mastered && <Badge label="Mastered" variant="status" />}
+              </div>
+              <h2 id="node-detail-title" className="text-xl font-semibold text-her-dark dark:text-her-cream">
+                {concept.name}
+              </h2>
+              {timeSinceReview !== null && (
+                <p className="text-xs text-her-dark/40 dark:text-her-cream/40 mt-1">
+                  Last reviewed {timeSinceReview === 0 ? 'today' : `${timeSinceReview} day${timeSinceReview !== 1 ? 's' : ''} ago`}
+                </p>
+              )}
+              {timeSinceReview === null && (
+                <p className="text-xs text-her-dark/40 dark:text-her-cream/40 mt-1">Never reviewed</p>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1 text-her-dark/40 dark:text-her-cream/40 hover:text-her-dark dark:hover:text-her-cream rounded transition-colors ml-2 shrink-0"
+              aria-label="Close Panel"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <MasteryGauge mastery={mastery} />
+
+          <p className="font-serif text-sm text-her-dark/70 dark:text-her-cream/70 leading-relaxed mt-4 mb-4">
+            {concept.description}
+          </p>
+
+          {prereqs.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs text-her-dark/40 dark:text-her-cream/40 mb-1.5">Prerequisites:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {prereqs.map(p => (
+                  <span
+                    key={p.id}
+                    className="text-xs px-2 py-0.5 rounded-full"
+                    style={{
+                      backgroundColor: `${TIER_CONFIG[p.tier as Tier].color}15`,
+                      color: TIER_CONFIG[p.tier as Tier].color,
+                    }}
+                  >
+                    {p.name} {getMastery(p.id) >= MASTERY_THRESHOLD ? '\u2713' : ''}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <AccordionSection title="How It Works" defaultOpen={false}>
+            <p className="font-serif text-sm text-her-dark/70 dark:text-her-cream/70 leading-relaxed">
+              {concept.detailedDescription}
+            </p>
+          </AccordionSection>
+
+          {concept.mathNotation && (
+            <AccordionSection title="The Math">
+              <MathDisplay latex={concept.mathNotation} />
+            </AccordionSection>
+          )}
+
+          {concept.codeExample && (
+            <AccordionSection title="Code Example">
+              <CodeBlock code={concept.codeExample} language="python" />
+            </AccordionSection>
+          )}
+
+          {concept.explorationId && onOpenExploration && (
+            <AccordionSection title="Try It">
+              <p className="text-sm text-her-dark/50 dark:text-her-cream/50 mb-3 font-serif">
+                Explore this concept hands-on with an interactive simulation.
+              </p>
+              <button
+                onClick={() => onOpenExploration(concept.explorationId!)}
+                className="w-full py-2.5 px-4 text-white text-sm font-medium rounded-lg transition-all hover:shadow-lg active:scale-[0.98]"
+                style={{ backgroundColor: tierColor }}
+              >
+                Open Interactive Exploration
+              </button>
+            </AccordionSection>
+          )}
+
+          {concept.quizzes.length > 0 && (
+            <AccordionSection title="Test Yourself" defaultOpen={false}>
+              <div className="flex gap-2 mb-4">
+                {([1, 2, 3] as Difficulty[]).map(d => {
+                  const hasQuizzes = concept.quizzes.some(q => q.difficulty === d);
+                  const labels = ['Easy', 'Medium', 'Hard'];
+                  const recommended = selectDifficulty(mastery, conceptState.attemptHistory);
+                  return (
+                    <button
+                      key={d}
+                      onClick={() => { setSelectedDifficulty(d); setQuizIndex(0); setSelectedAnswer(null); setQuizSubmitted(false); setHintsRevealed(0); }}
+                      disabled={!hasQuizzes}
+                      className={`px-3 py-1 text-xs rounded-full transition-all ${
+                        selectedDifficulty === d
+                          ? 'bg-white dark:bg-white/15 text-her-dark dark:text-her-cream shadow-sm'
+                          : hasQuizzes
+                            ? 'bg-her-dark/5 dark:bg-white/5 text-her-dark/60 dark:text-her-cream/60 hover:bg-her-dark/10 dark:hover:bg-white/10'
+                            : 'opacity-30 cursor-not-allowed bg-her-dark/5 dark:bg-white/5 text-her-dark/40 dark:text-her-cream/40'
+                      }`}
+                    >
+                      {labels[d - 1]} {d === recommended && hasQuizzes ? '*' : ''}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {currentQuiz ? (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-medium ${
+                      currentQuiz.type === 'multiple-choice' ? 'bg-her-red/10 text-her-red' :
+                      currentQuiz.type === 'fill-blank' ? 'bg-purple-500/10 text-purple-400' :
+                      'bg-amber-500/10 text-amber-400'
+                    }`}>
+                      {currentQuiz.type === 'multiple-choice' ? 'Multiple Choice' :
+                       currentQuiz.type === 'fill-blank' ? 'Fill in the Blank' : 'Ordering'}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-her-dark dark:text-her-cream font-medium mb-3">
+                    {currentQuiz.question}
+                  </p>
+
+                  {currentQuiz.type === 'multiple-choice' && currentQuiz.options && (
+                    <div className="space-y-2 mb-4">
+                      {currentQuiz.options.map((opt, i) => {
+                        const isCorrect = opt === currentQuiz.correctAnswer;
+                        const isSelected = selectedAnswer === opt;
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => !quizSubmitted && setSelectedAnswer(opt)}
+                            disabled={quizSubmitted}
+                            className={`w-full text-left p-3 text-sm rounded-lg border transition-all ${
+                              quizSubmitted
+                                ? isCorrect
+                                  ? 'border-emerald-500 bg-emerald-500/5 text-emerald-500'
+                                  : isSelected
+                                    ? 'border-red-500 bg-red-500/5 text-red-500'
+                                    : 'border-her-dark/10 dark:border-white/10 text-her-dark/40 dark:text-her-cream/40'
+                                : isSelected
+                                  ? 'border-her-red/50 bg-her-red/5 text-her-dark dark:text-her-cream'
+                                  : 'border-her-dark/10 dark:border-white/10 text-her-dark/70 dark:text-her-cream/70 hover:border-her-dark/20 dark:hover:border-white/20'
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {currentQuiz.type === 'fill-blank' && (
+                    <div className="mb-4">
+                      <input
+                        type="text"
+                        value={fillBlankAnswer}
+                        onChange={(e) => !quizSubmitted && setFillBlankAnswer(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && !quizSubmitted && isQuizAnswered() && handleQuizSubmit()}
+                        disabled={quizSubmitted}
+                        placeholder="Type your answer..."
+                        className={`w-full p-3 text-sm rounded-lg border font-mono transition-all bg-transparent outline-none ${
+                          quizSubmitted
+                            ? isQuizCorrect()
+                              ? 'border-emerald-500 bg-emerald-500/5 text-emerald-500'
+                              : 'border-red-500 bg-red-500/5 text-red-500'
+                            : 'border-her-dark/10 dark:border-white/10 text-her-dark dark:text-her-cream focus:border-her-red/50'
+                        }`}
+                      />
+                      {quizSubmitted && !isQuizCorrect() && (
+                        <p className="text-xs text-her-dark/40 dark:text-her-cream/40 mt-1.5 font-mono">
+                          Correct answer: <span className="text-emerald-500">{currentQuiz.correctAnswer as string}</span>
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {currentQuiz.type === 'ordering' && (
+                    <div className="mb-4 space-y-1.5" role="listbox" aria-label="Reorder items. Use arrow keys to move items up or down.">
+                      {orderingItems.map((item, idx) => {
+                        const correctArr = currentQuiz.correctAnswer as string[];
+                        const isCorrectPosition = quizSubmitted && correctArr[idx] === item;
+                        const isWrongPosition = quizSubmitted && correctArr[idx] !== item;
+                        return (
+                          <div
+                            key={`${item}-${idx}`}
+                            role="option"
+                            tabIndex={0}
+                            aria-label={`${item}, position ${idx + 1} of ${orderingItems.length}. Use arrow keys to reorder.`}
+                            aria-selected={dragIdx === idx}
+                            draggable={!quizSubmitted}
+                            onDragStart={() => handleOrderingDragStart(idx)}
+                            onDragOver={(e) => handleOrderingDragOver(e, idx)}
+                            onDragEnd={() => setDragIdx(null)}
+                            onKeyDown={(e) => handleOrderingKeyDown(e, idx)}
+                            className={`flex items-center gap-2 p-3 text-sm rounded-lg border transition-all select-none ${
+                              quizSubmitted
+                                ? isCorrectPosition
+                                  ? 'border-emerald-500 bg-emerald-500/5 text-emerald-500'
+                                  : isWrongPosition
+                                    ? 'border-red-500 bg-red-500/5 text-red-500'
+                                    : 'border-her-dark/10 dark:border-white/10 text-her-dark/40 dark:text-her-cream/40'
+                                : dragIdx === idx
+                                  ? 'border-her-red/50 bg-her-red/5 text-her-dark dark:text-her-cream scale-[1.02]'
+                                  : 'border-her-dark/10 dark:border-white/10 text-her-dark/70 dark:text-her-cream/70 hover:border-her-dark/20 dark:hover:border-white/20 cursor-grab'
+                            }`}
+                          >
+                            <span className="text-xs text-her-dark/40 dark:text-her-cream/40 w-5 shrink-0">{idx + 1}.</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-her-dark/40 dark:text-her-cream/40 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16" />
+                            </svg>
+                            <span className="flex-1">{item}</span>
+                            {quizSubmitted && isCorrectPosition && <span className="text-emerald-500 text-xs">&#10003;</span>}
+                            {quizSubmitted && isWrongPosition && <span className="text-red-500 text-xs">&#10007;</span>}
+                          </div>
+                        );
+                      })}
+                      {quizSubmitted && !isQuizCorrect() && (
+                        <div className="mt-2 p-2 rounded-lg bg-her-dark/5 dark:bg-white/5 border border-her-dark/10 dark:border-white/10">
+                          <p className="text-xs text-her-dark/40 dark:text-her-cream/40 mb-1">Correct order:</p>
+                          {(currentQuiz.correctAnswer as string[]).map((item, i) => (
+                            <p key={i} className="text-xs text-emerald-500/80 ml-2">{i + 1}. {item}</p>
+                          ))}
+                        </div>
+                      )}
+                      <div aria-live="assertive" aria-atomic="true" className="sr-only">
+                        {orderingAnnouncement}
+                      </div>
+                    </div>
+                  )}
+
+                  {currentQuiz.hints && currentQuiz.hints.length > 0 && !quizSubmitted && (
+                    <div className="mb-3">
+                      {hintsRevealed > 0 && (
+                        <div className="space-y-1 mb-2">
+                          {currentQuiz.hints.slice(0, hintsRevealed).map((hint, i) => (
+                            <p key={i} className="text-xs text-amber-500 dark:text-amber-400 bg-amber-500/10 px-2 py-1 rounded">
+                              Hint {i + 1}: {hint}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                      {hintsRevealed < currentQuiz.hints.length && (
+                        <button
+                          onClick={() => setHintsRevealed(prev => prev + 1)}
+                          className="text-xs text-amber-500 hover:text-amber-400"
+                        >
+                          Show hint ({hintsRevealed}/{currentQuiz.hints.length})
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {!quizSubmitted ? (
+                    <button
+                      onClick={handleQuizSubmit}
+                      disabled={!isQuizAnswered()}
+                      className="w-full py-2 bg-white dark:bg-white/15 text-her-dark dark:text-her-cream text-sm rounded-full disabled:opacity-50 transition-all"
+                    >
+                      Submit Answer
+                    </button>
+                  ) : (
+                    <div>
+                      <motion.p
+                        className={`text-sm mb-2 ${isQuizCorrect() ? 'text-emerald-500' : 'text-red-500'}`}
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: "spring", damping: 15, stiffness: 200 }}
+                      >
+                        {isQuizCorrect()
+                          ? 'Correct! Great work.'
+                          : consecutiveIncorrect >= 3
+                            ? 'Even experts struggle with this topic. Would you like to revisit the fundamentals?'
+                            : consecutiveIncorrect === 2
+                              ? 'This is a challenging concept. Each attempt builds understanding.'
+                              : "Not quite \u2014 let's review the explanation together."}
+                      </motion.p>
+                      {currentQuiz.explanation && (
+                        <p className="text-xs text-her-dark/40 dark:text-her-cream/40 mb-3 font-serif italic">
+                          {currentQuiz.explanation}
+                        </p>
+                      )}
+                      <button
+                        onClick={handleNextQuiz}
+                        className="w-full py-2 bg-white dark:bg-white/15 text-her-dark dark:text-her-cream text-sm rounded-full transition-all"
+                      >
+                        Next Question
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-her-dark/40 dark:text-her-cream/40">No quizzes at this difficulty level.</p>
+              )}
+            </AccordionSection>
+          )}
+
+          {concept.resources.length > 0 && (
+            <AccordionSection title="Learn More">
+              <div className="space-y-2">
+                {concept.resources.map((resource, i) => {
+                  const icons: Record<string, string> = { paper: 'P', video: 'V', tutorial: 'T', tool: 'L' };
+                  return (
+                    <a
+                      key={i}
+                      href={resource.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2.5 p-2.5 rounded-lg glass border border-her-dark/10 dark:border-white/10 hover:border-her-red/30 transition-colors group"
+                    >
+                      <span className="w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center bg-her-red/10 text-her-red shrink-0">
+                        {icons[resource.type] || 'L'}
+                      </span>
+                      <span className="text-sm text-her-dark/70 dark:text-her-cream/70 group-hover:text-her-red transition-colors">
+                        {resource.title}
+                      </span>
+                    </a>
+                  );
+                })}
+              </div>
+            </AccordionSection>
+          )}
+
+          <AccordionSection title="AI Insight">
+            {isLoadingAI ? (
+              <div className="space-y-2 animate-pulse">
+                <div className="h-3 w-full rounded-full bg-her-dark/5 dark:bg-white/5" />
+                <div className="h-3 w-5/6 rounded-full bg-her-dark/5 dark:bg-white/5" />
+                <div className="h-3 w-4/6 rounded-full bg-her-dark/5 dark:bg-white/5" />
+                <p className="text-[10px] uppercase tracking-[0.2em] text-her-dark/30 dark:text-her-cream/30 mt-2">generating insight</p>
+              </div>
+            ) : aiInsight ? (
+              <div className="p-3 glass rounded-2xl">
+                <p className="font-serif text-sm text-her-dark/70 dark:text-her-cream/70 italic leading-relaxed">"{aiInsight}"</p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-xs text-her-dark/40 dark:text-her-cream/40 mb-2 font-serif">
+                  Get an AI-generated perspective on this concept.
+                </p>
+                <button
+                  onClick={handleGenerateInsight}
+                  className="text-xs glass rounded-full text-her-dark/60 dark:text-her-cream/60 hover:text-her-red px-3 py-1.5 transition-colors"
+                >
+                  Generate Insight
+                </button>
+              </div>
+            )}
+          </AccordionSection>
+        </div>
+      </div>
+    </div>
+  );
 };

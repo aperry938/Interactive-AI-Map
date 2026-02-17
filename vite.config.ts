@@ -20,6 +20,16 @@ export default defineConfig(({ mode }) => {
       environment: 'jsdom',
       globals: true,
       setupFiles: [],
+      coverage: {
+        provider: 'v8',
+        include: ['src/engine/**', 'src/stores/**', 'src/services/**'],
+        thresholds: {
+          statements: 70,
+          branches: 60,
+          functions: 70,
+          lines: 70,
+        },
+      },
     },
   };
 });
