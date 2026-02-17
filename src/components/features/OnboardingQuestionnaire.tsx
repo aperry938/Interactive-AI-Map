@@ -117,22 +117,22 @@ export const OnboardingQuestionnaire: React.FC<OnboardingQuestionnaireProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-her-dark/95 backdrop-blur-md flex flex-col" role="dialog" aria-modal="true" aria-label="Onboarding questionnaire">
+    <div className="fixed inset-0 z-50 bg-[#0A0707]/95 backdrop-blur-md flex flex-col" role="dialog" aria-modal="true" aria-label="Onboarding questionnaire">
       {/* Progress bar */}
       <div className="w-full px-6 pt-4">
         <div className="max-w-xl mx-auto">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-her-cream/40">Step {step + 1} of {TOTAL_STEPS}</span>
+            <span className="text-xs text-white/40">Step {step + 1} of {TOTAL_STEPS}</span>
             <button
               onClick={onSkip}
-              className="text-xs text-her-cream/30 hover:text-her-cream/60 transition-colors"
+              className="text-xs text-white/30 hover:text-white/60 transition-colors"
             >
               Skip Onboarding
             </button>
           </div>
-          <div className="h-1 bg-her-dark/20 rounded-full overflow-hidden">
+          <div className="h-0.5 bg-white/[0.06] rounded-full overflow-hidden">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-her-red to-her-orange"
+              className="h-full rounded-full bg-her-cream/30"
               initial={false}
               animate={{ width: `${((step + 1) / TOTAL_STEPS) * 100}%` }}
               transition={{ duration: 0.3 }}
@@ -203,14 +203,14 @@ export const OnboardingQuestionnaire: React.FC<OnboardingQuestionnaireProps> = (
           <button
             onClick={goBack}
             disabled={step === 0}
-            className="px-4 py-2 text-sm text-her-cream/40 hover:text-her-cream transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm text-white/30 hover:text-white/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             Back
           </button>
           <button
             onClick={goNext}
             disabled={!canProceed()}
-            className="bg-white text-her-dark rounded-full px-6 py-2.5 font-medium text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="bg-white/[0.10] border border-white/[0.10] text-white/80 rounded-full px-6 py-2.5 font-light text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.15]"
           >
             {step === TOTAL_STEPS - 1 ? 'Get Started' : 'Next'}
           </button>
@@ -248,10 +248,10 @@ const StepExperience: React.FC<{
 
   return (
     <div>
-      <h2 className="text-2xl font-light text-her-cream mb-2 text-center">
+      <h2 className="text-2xl font-light text-white/85 mb-2 text-center">
         What's your experience with AI/ML?
       </h2>
-      <p className="text-sm text-her-cream/50 mb-8 text-center">
+      <p className="text-sm text-white/40 mb-8 text-center">
         This helps us personalize your learning path
       </p>
       <div className="grid gap-3" role="radiogroup" aria-label="Experience level">
@@ -261,15 +261,15 @@ const StepExperience: React.FC<{
             onClick={() => onSelect(opt.value)}
             role="radio"
             aria-checked={selected === opt.value}
-            className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+            className={`w-full text-left p-4 rounded-xl border transition-all ${
               selected === opt.value
-                ? 'border-her-red/40 bg-her-red/5'
-                : 'border-her-dark/10 dark:border-white/10 bg-white/5 hover:border-white/20'
+                ? 'border-white/20 bg-white/[0.06]'
+                : 'border-white/[0.08] bg-white/[0.04] hover:border-white/20'
             }`}
           >
             <div>
-              <p className="font-medium text-her-cream">{opt.title}</p>
-              <p className="text-sm text-her-cream/50">{opt.desc}</p>
+              <p className="font-light text-white/85">{opt.title}</p>
+              <p className="text-sm text-white/40">{opt.desc}</p>
             </div>
           </button>
         ))}
@@ -295,16 +295,16 @@ const StepBackground: React.FC<{
 
   return (
     <div>
-      <h2 className="text-2xl font-light text-her-cream mb-2 text-center">
+      <h2 className="text-2xl font-light text-white/85 mb-2 text-center">
         Your Background
       </h2>
-      <p className="text-sm text-her-cream/50 mb-6 text-center">
+      <p className="text-sm text-white/40 mb-6 text-center">
         Help us understand your strengths
       </p>
 
       {/* Math comfort */}
       <div className="mb-6">
-        <label className="block text-[10px] uppercase tracking-[0.2em] text-her-cream/60 mb-2">
+        <label className="block text-[10px] uppercase tracking-[0.2em] text-white/30 mb-2">
           Math Comfort Level
         </label>
         <input
@@ -313,7 +313,7 @@ const StepBackground: React.FC<{
           max={5}
           value={mathComfort}
           onChange={e => onMathChange(Number(e.target.value))}
-          className="w-full accent-her-red"
+          className="w-full"
           aria-label="Math comfort level"
           aria-valuetext={MATH_LABELS[mathComfort - 1]}
         />
@@ -322,7 +322,7 @@ const StepBackground: React.FC<{
             <span
               key={i}
               className={`text-[10px] max-w-[60px] text-center leading-tight ${
-                mathComfort === i + 1 ? 'text-her-red font-medium' : 'text-her-cream/40'
+                mathComfort === i + 1 ? 'text-white/70 font-light' : 'text-white/30'
               }`}
             >
               {label}
@@ -333,7 +333,7 @@ const StepBackground: React.FC<{
 
       {/* Programming */}
       <div className="mb-6">
-        <label className="block text-[10px] uppercase tracking-[0.2em] text-her-cream/60 mb-2">
+        <label className="block text-[10px] uppercase tracking-[0.2em] text-white/30 mb-2">
           Programming Proficiency
         </label>
         <div className="grid grid-cols-4 gap-2">
@@ -343,8 +343,8 @@ const StepBackground: React.FC<{
               onClick={() => onProgrammingChange(opt.value)}
               className={`py-2 px-3 text-xs rounded-lg border transition-all ${
                 programmingLevel === opt.value
-                  ? 'border-her-red/40 bg-her-red/5 text-her-red'
-                  : 'border-her-dark/10 dark:border-white/10 text-her-cream/50 hover:border-white/20'
+                  ? 'border-white/20 bg-white/[0.06] text-white/70'
+                  : 'border-white/[0.08] bg-white/[0.04] text-white/40 hover:border-white/20'
               }`}
             >
               {opt.label}
@@ -355,8 +355,8 @@ const StepBackground: React.FC<{
 
       {/* Prior courses */}
       <div>
-        <label className="block text-[10px] uppercase tracking-[0.2em] text-her-cream/60 mb-2">
-          Prior Coursework <span className="text-her-cream/30 font-normal">(optional)</span>
+        <label className="block text-[10px] uppercase tracking-[0.2em] text-white/30 mb-2">
+          Prior Coursework <span className="text-white/20 font-normal">(optional)</span>
         </label>
         <div className="flex flex-wrap gap-2">
           {PRIOR_COURSES.map(course => (
@@ -365,8 +365,8 @@ const StepBackground: React.FC<{
               onClick={() => onToggleCourse(course.id)}
               className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
                 priorCourses.includes(course.id)
-                  ? 'border-her-red/40 bg-her-red/5 text-her-red'
-                  : 'border-her-dark/10 dark:border-white/10 text-her-cream/50 hover:border-white/20'
+                  ? 'border-white/20 bg-white/[0.06] text-white/70'
+                  : 'border-white/[0.08] bg-white/[0.04] text-white/40 hover:border-white/20'
               }`}
             >
               {course.label}
@@ -386,10 +386,10 @@ const StepFamiliarity: React.FC<{
 
   return (
     <div>
-      <h2 className="text-2xl font-light text-her-cream mb-2 text-center">
+      <h2 className="text-2xl font-light text-white/85 mb-2 text-center">
         Concept Familiarity
       </h2>
-      <p className="text-sm text-her-cream/50 mb-6 text-center">
+      <p className="text-sm text-white/40 mb-6 text-center">
         Tap concepts you're already familiar with
       </p>
       <div className="max-h-[50vh] overflow-y-auto pr-2 space-y-4">
@@ -398,7 +398,7 @@ const StepFamiliarity: React.FC<{
           if (concepts.length === 0) return null;
           return (
             <div key={tier}>
-              <p className="text-xs font-medium mb-2" style={{ color: TIER_CONFIG[tier].color }}>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-2">
                 {TIER_CONFIG[tier].label}
               </p>
               <div className="flex flex-wrap gap-1.5" role="group" aria-label={`${TIER_CONFIG[tier].label} concepts`}>
@@ -410,18 +410,9 @@ const StepFamiliarity: React.FC<{
                     aria-checked={selected.includes(c.id)}
                     className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
                       selected.includes(c.id)
-                        ? ''
-                        : 'border-her-dark/10 dark:border-white/10 text-her-cream/50 hover:border-white/20'
+                        ? 'border-white/20 bg-white/[0.06] text-white/70'
+                        : 'border-white/[0.08] bg-white/[0.04] text-white/40 hover:border-white/20'
                     }`}
-                    style={
-                      selected.includes(c.id)
-                        ? {
-                            borderColor: TIER_CONFIG[tier].color,
-                            backgroundColor: `${TIER_CONFIG[tier].color}20`,
-                            color: TIER_CONFIG[tier].color,
-                          }
-                        : undefined
-                    }
                   >
                     {c.name}
                   </button>
@@ -464,10 +455,10 @@ const StepGoal: React.FC<{
 
   return (
     <div>
-      <h2 className="text-2xl font-light text-her-cream mb-2 text-center">
+      <h2 className="text-2xl font-light text-white/85 mb-2 text-center">
         What's Your Goal?
       </h2>
-      <p className="text-sm text-her-cream/50 mb-8 text-center">
+      <p className="text-sm text-white/40 mb-8 text-center">
         We'll tailor recommendations to your path
       </p>
       <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Learning goal">
@@ -477,14 +468,14 @@ const StepGoal: React.FC<{
             onClick={() => onSelect(goal.value)}
             role="radio"
             aria-checked={selected === goal.value}
-            className={`text-left p-4 rounded-xl border-2 transition-all ${
+            className={`text-left p-4 rounded-xl border transition-all ${
               selected === goal.value
-                ? 'border-her-red/40 bg-her-red/5'
-                : 'border-her-dark/10 dark:border-white/10 bg-white/5 hover:border-white/20'
+                ? 'border-white/20 bg-white/[0.06]'
+                : 'border-white/[0.08] bg-white/[0.04] hover:border-white/20'
             }`}
           >
-            <p className="font-medium text-her-cream text-sm">{goal.title}</p>
-            <p className="text-xs text-her-cream/50 mt-1">{goal.desc}</p>
+            <p className="font-light text-white/85 text-sm">{goal.title}</p>
+            <p className="text-xs text-white/40 mt-1">{goal.desc}</p>
           </button>
         ))}
       </div>
@@ -501,9 +492,9 @@ const StepSummary: React.FC<{
   learningGoal: string | null;
 }> = ({ experienceLevel, mathComfort, programmingLevel, priorCourses, mlFamiliarity, learningGoal }) => (
   <div>
-    <h2 className="text-2xl font-light text-her-cream mb-2 text-center">Review Your Profile</h2>
-    <p className="text-sm text-her-cream/50 mb-6 text-center">Confirm your selections before we personalize your experience</p>
-    <div className="space-y-4 rounded-xl border border-her-dark/10 dark:border-white/10 bg-white/5 p-4">
+    <h2 className="text-2xl font-light text-white/85 mb-2 text-center">Review Your Profile</h2>
+    <p className="text-sm text-white/40 mb-6 text-center">Confirm your selections before we personalize your experience</p>
+    <div className="space-y-4 rounded-xl border border-white/[0.06] bg-white/[0.04] p-4">
       <SummaryRow label="Experience" value={experienceLevel ?? 'Not set'} />
       <SummaryRow label="Math Comfort" value={`${mathComfort}/5 — ${MATH_LABELS[mathComfort - 1]}`} />
       <SummaryRow label="Programming" value={programmingLevel} />
@@ -516,7 +507,7 @@ const StepSummary: React.FC<{
 
 const SummaryRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <div className="flex justify-between items-start">
-    <span className="text-xs text-her-cream/40">{label}</span>
-    <span className="text-sm text-her-cream/80 text-right max-w-[60%] capitalize">{value}</span>
+    <span className="text-xs text-white/30">{label}</span>
+    <span className="text-sm text-white/70 text-right max-w-[60%] capitalize">{value}</span>
   </div>
 );

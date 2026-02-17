@@ -80,13 +80,13 @@ const EXPLORATION_MAP: Record<string, React.LazyExoticComponent<React.ComponentT
 
 const LoadingFallback = () => (
   <div className="flex flex-col gap-4 p-8 max-w-2xl mx-auto animate-pulse">
-    <div className="h-8 w-48 rounded-full bg-her-dark/5 dark:bg-white/5" />
-    <div className="h-4 w-full rounded-full bg-her-dark/5 dark:bg-white/5" />
-    <div className="h-4 w-3/4 rounded-full bg-her-dark/5 dark:bg-white/5" />
+    <div className="h-8 w-48 rounded-full bg-white/[0.05]" />
+    <div className="h-4 w-full rounded-full bg-white/[0.05]" />
+    <div className="h-4 w-3/4 rounded-full bg-white/[0.05]" />
     <div className="grid grid-cols-3 gap-3 mt-4">
-      <div className="h-24 rounded-2xl bg-her-dark/5 dark:bg-white/5" />
-      <div className="h-24 rounded-2xl bg-her-dark/5 dark:bg-white/5" />
-      <div className="h-24 rounded-2xl bg-her-dark/5 dark:bg-white/5" />
+      <div className="h-24 rounded-2xl bg-white/[0.05]" />
+      <div className="h-24 rounded-2xl bg-white/[0.05]" />
+      <div className="h-24 rounded-2xl bg-white/[0.05]" />
     </div>
   </div>
 );
@@ -109,8 +109,8 @@ export const AppRouter: React.FC = () => {
           return (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <p className="text-sm text-her-dark/50 dark:text-her-cream/50 font-light tracking-wide mb-4">Exploration not found: {route.explorationId}</p>
-                <button onClick={() => navigate('/learn')} className="bg-white dark:bg-white/15 text-her-dark dark:text-her-cream rounded-full px-6 py-2.5 text-sm">
+                <p className="text-sm text-white/40 font-light tracking-wide mb-4">Exploration not found: {route.explorationId}</p>
+                <button onClick={() => navigate('/learn')} className="bg-white/[0.10] border border-white/[0.10] text-white/80 rounded-full px-6 py-2.5 text-sm font-light">
                   Back to Learning
                 </button>
               </div>
@@ -122,14 +122,14 @@ export const AppRouter: React.FC = () => {
             <div className="flex items-center justify-between glass rounded-full mx-4 mt-4 px-4 py-2">
               <button
                 onClick={handleExplorationClose}
-                className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-her-dark/40 dark:text-her-cream/40 hover:text-her-red transition-colors"
+                className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/30 hover:text-white/60 transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
                 Back to Graph
               </button>
-              <span className="text-sm text-her-dark/50 dark:text-her-cream/50 font-medium capitalize">
+              <span className="text-sm text-white/40 font-light capitalize">
                 {route.explorationId.replace(/-/g, ' ')}
               </span>
             </div>
@@ -143,8 +143,8 @@ export const AppRouter: React.FC = () => {
           <Suspense fallback={<LoadingFallback />}>
             <div className="h-full overflow-auto p-6">
               <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-light tracking-[0.05em] text-her-dark/90 dark:text-her-cream/90">Progress Dashboard</h1>
-                <button onClick={() => navigate('/learn')} className="text-[10px] uppercase tracking-wider text-her-dark/40 dark:text-her-cream/40 hover:text-her-red transition-colors">
+                <h1 className="text-2xl font-light tracking-[0.05em] text-white/85">Progress Dashboard</h1>
+                <button onClick={() => navigate('/learn')} className="text-[10px] uppercase tracking-[0.2em] text-white/30 hover:text-white/60 transition-colors">
                   Back to Learning
                 </button>
               </div>
@@ -156,8 +156,8 @@ export const AppRouter: React.FC = () => {
           <Suspense fallback={<LoadingFallback />}>
             <div className="h-full overflow-auto p-6">
               <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-light tracking-[0.05em] text-her-dark/90 dark:text-her-cream/90">Review Queue</h1>
-                <button onClick={() => navigate('/learn')} className="text-[10px] uppercase tracking-wider text-her-dark/40 dark:text-her-cream/40 hover:text-her-red transition-colors">
+                <h1 className="text-2xl font-light tracking-[0.05em] text-white/85">Review Queue</h1>
+                <button onClick={() => navigate('/learn')} className="text-[10px] uppercase tracking-[0.2em] text-white/30 hover:text-white/60 transition-colors">
                   Back to Learning
                 </button>
               </div>

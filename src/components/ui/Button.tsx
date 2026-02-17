@@ -1,16 +1,12 @@
 import React from 'react';
-import type { Tier } from '../../types';
-import { TIER_CONFIG } from '../../types';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost';
-  tier?: Tier;
   size?: 'sm' | 'md' | 'lg';
 }
 
 export const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
-  tier,
   size = 'md',
   className = '',
   children,
@@ -22,26 +18,16 @@ export const Button: React.FC<ButtonProps> = ({
     lg: 'px-6 py-3 text-base',
   };
 
-  const tierColor = tier ? TIER_CONFIG[tier].color : undefined;
-
-  const baseClasses = `inline-flex items-center justify-center gap-2 font-medium rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${sizeClasses[size]}`;
+  const baseClasses = `inline-flex items-center justify-center gap-2 font-light rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${sizeClasses[size]}`;
 
   const variantClasses = {
-    primary: `bg-white text-her-dark shadow-glow-white hover:shadow-lg active:scale-[0.98]`,
-    secondary: `glass rounded-full text-her-dark dark:text-her-cream active:scale-[0.98]`,
-    ghost: `text-her-dark/60 dark:text-her-cream/60 hover:bg-white/50 dark:hover:bg-white/10 rounded-full active:scale-[0.98]`,
+    primary: `bg-white/[0.10] border border-white/[0.10] text-white/80 hover:bg-white/[0.15] active:scale-[0.98]`,
+    secondary: `bg-white/[0.05] border border-white/[0.08] text-white/60 hover:bg-white/[0.08] active:scale-[0.98]`,
+    ghost: `text-white/50 hover:text-white/70 active:scale-[0.98]`,
   };
 
-  const style = tierColor
-    ? {
-        backgroundColor: variant === 'primary' ? tierColor : undefined,
-        borderColor: variant === 'secondary' ? tierColor : undefined,
-        boxShadow: variant === 'primary' ? `0 0 15px ${tierColor}40` : undefined,
-      }
-    : undefined;
-
   return (
-    <button className={`${baseClasses} ${variantClasses[variant]} ${className}`} style={style} {...props}>
+    <button className={`${baseClasses} ${variantClasses[variant]} ${className}`} {...props}>
       {children}
     </button>
   );

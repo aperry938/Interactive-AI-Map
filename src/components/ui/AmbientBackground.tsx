@@ -1,22 +1,29 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-// Large, visible orbs that create the warm gradient wash like her-os
 const orbs = [
-  { color: '#D94436', size: 900, x: '10%', y: '-10%', duration: 35, opacity: 0.25 },
-  { color: '#E87C56', size: 1100, x: '60%', y: '50%', duration: 40, opacity: 0.3 },
-  { color: '#F2E8DC', size: 800, x: '40%', y: '20%', duration: 30, opacity: 0.35 },
-  { color: '#E6B8A2', size: 1000, x: '20%', y: '70%', duration: 38, opacity: 0.2 },
-  { color: '#D94436', size: 700, x: '80%', y: '-5%', duration: 32, opacity: 0.15 },
+  { color: '#D94436', size: 1000, x: '5%', y: '-15%', duration: 40, opacity: 0.12 },
+  { color: '#E87C56', size: 1200, x: '55%', y: '45%', duration: 45, opacity: 0.1 },
+  { color: '#2C1A1A', size: 900, x: '35%', y: '15%', duration: 35, opacity: 0.2 },
+  { color: '#E6B8A2', size: 1100, x: '15%', y: '65%', duration: 42, opacity: 0.08 },
+  { color: '#D94436', size: 800, x: '75%', y: '-8%', duration: 38, opacity: 0.06 },
 ];
 
 export const AmbientBackground: React.FC = () => {
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-      {/* Base background */}
-      <div className="absolute inset-0 bg-her-cream dark:bg-[#0F0A0A] transition-colors duration-500" />
+      {/* Deep dark base */}
+      <div className="absolute inset-0 bg-[#0A0707] transition-colors duration-500" />
 
-      {/* Ambient orbs — large and visible to create the warm wash */}
+      {/* Subtle radial gradient center glow */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse at 40% 30%, rgba(217, 68, 54, 0.06) 0%, rgba(10, 7, 7, 0) 70%)',
+        }}
+      />
+
+      {/* Ambient orbs — very subtle */}
       {orbs.map((orb, i) => (
         <motion.div
           key={i}
@@ -28,12 +35,12 @@ export const AmbientBackground: React.FC = () => {
             top: orb.y,
             backgroundColor: orb.color,
             opacity: orb.opacity,
-            filter: `blur(${Math.round(orb.size * 0.4)}px)`,
+            filter: `blur(${Math.round(orb.size * 0.45)}px)`,
           }}
           animate={{
-            x: [0, 60, -40, 30, 0],
-            y: [0, -30, 20, -50, 0],
-            scale: [1, 1.05, 0.97, 1.03, 1],
+            x: [0, 40, -30, 20, 0],
+            y: [0, -20, 15, -35, 0],
+            scale: [1, 1.03, 0.98, 1.02, 1],
           }}
           transition={{
             duration: orb.duration,
@@ -43,8 +50,8 @@ export const AmbientBackground: React.FC = () => {
         />
       ))}
 
-      {/* Grid overlay — dark mode only */}
-      <div className="absolute inset-0 grid-overlay opacity-0 dark:opacity-100 transition-opacity duration-500" />
+      {/* Grid overlay */}
+      <div className="absolute inset-0 grid-overlay opacity-40" />
 
       {/* Grain overlay */}
       <div className="grain-overlay absolute inset-0" />

@@ -15,15 +15,14 @@ const MasteryGauge: React.FC<{ mastery: number }> = ({ mastery }) => {
   const pct = mastery;
   const r = 14;
   const circumference = 2 * Math.PI * r;
-  const color = pct >= 0.85 ? '#10B981' : pct >= 0.5 ? '#F59E0B' : '#3B82F6';
 
   return (
     <svg width={36} height={36} viewBox="0 0 36 36" className="shrink-0">
-      <circle cx={18} cy={18} r={r} fill="none" stroke="rgba(44,26,26,0.06)" strokeWidth={3} />
+      <circle cx={18} cy={18} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={3} />
       <motion.circle
         cx={18} cy={18} r={r}
         fill="none"
-        stroke={color}
+        stroke="rgba(242,232,220,0.40)"
         strokeWidth={3}
         strokeLinecap="round"
         initial={{ strokeDasharray: `0 ${circumference}` }}
@@ -31,7 +30,7 @@ const MasteryGauge: React.FC<{ mastery: number }> = ({ mastery }) => {
         transition={{ duration: 0.6, ease: 'easeOut' }}
         transform="rotate(-90 18 18)"
       />
-      <text x={18} y={18} textAnchor="middle" dominantBaseline="central" className="text-[8px] fill-her-dark/50 dark:fill-her-cream/50 font-medium">
+      <text x={18} y={18} textAnchor="middle" dominantBaseline="central" className="text-[8px] fill-white/40 font-light">
         {Math.round(pct * 100)}
       </text>
     </svg>
@@ -42,10 +41,7 @@ const MasteryGauge: React.FC<{ mastery: number }> = ({ mastery }) => {
 const TierBadge: React.FC<{ tier: Tier }> = ({ tier }) => {
   const cfg = TIER_CONFIG[tier];
   return (
-    <span
-      className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded"
-      style={{ backgroundColor: `${cfg.color}20`, color: cfg.color }}
-    >
+    <span className="text-[10px] uppercase tracking-[0.2em] font-light px-1.5 py-0.5 rounded bg-white/[0.06] text-white/30">
       T{tier}
     </span>
   );
@@ -116,20 +112,20 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onSelectConcept }) => 
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
       >
-        <div className="w-14 h-14 rounded-full bg-her-red/5 flex items-center justify-center mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-her-red" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <div className="w-14 h-14 rounded-full bg-white/[0.06] flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <p className="text-sm font-medium text-her-dark/80 dark:text-her-cream/80">All caught up!</p>
-        <p className="text-xs text-her-dark/40 dark:text-her-cream/40 mt-1">No reviews due.</p>
+        <p className="text-sm font-light text-white/50">All caught up!</p>
+        <p className="text-xs text-white/30 mt-1">No reviews due.</p>
       </motion.div>
     );
   }
 
   return (
-    <div className="space-y-2">
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-her-dark/50 dark:text-her-cream/50 mb-3">
+    <div className="space-y-0">
+      <h4 className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-3">
         Review Queue ({visibleCards.length})
       </h4>
       <AnimatePresence mode="popLayout">
@@ -138,7 +134,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onSelectConcept }) => 
             key={card.id}
             layout
             onClick={() => handleSelect(card.id)}
-            className="w-full flex items-center gap-3 px-4 py-3 glass rounded-2xl hover:bg-white/60 dark:hover:bg-white/[0.08] transition-colors text-left group"
+            className="w-full flex items-center gap-3 px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors text-left group"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 300, scale: 0.95 }}
@@ -151,18 +147,18 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onSelectConcept }) => 
             <MasteryGauge mastery={card.mastery} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-sm font-medium text-her-dark dark:text-her-cream truncate group-hover:text-her-dark dark:group-hover:text-white transition-colors">
+                <span className="text-sm font-light text-white/70 truncate transition-colors">
                   {card.name}
                 </span>
                 <TierBadge tier={card.tier} />
               </div>
               {card.lastReviewTimestamp > 0 && (
-                <span className="text-[11px] text-her-dark/30 dark:text-her-cream/30">
+                <span className="text-[11px] text-white/20">
                   Last reviewed {timeSince(card.lastReviewTimestamp)}
                 </span>
               )}
             </div>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-her-dark/20 dark:text-her-cream/20 group-hover:text-her-dark/40 dark:group-hover:text-her-cream/40 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white/15 group-hover:text-white/30 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
           </motion.button>

@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import type { Tier, Difficulty } from '../../types';
 import { TIER_CONFIG, MASTERY_THRESHOLD } from '../../types';
 import { curriculum } from '../../data/curriculum';
-import { Badge } from '../ui/Badge';
 import { CodeBlock } from '../ui/CodeBlock';
 import { useLearner } from '../../stores/learnerStore';
 import { updateMastery, isMastered } from '../../engine/bkt';
@@ -31,17 +30,17 @@ const AccordionSection: React.FC<{
   const contentRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="border-t border-her-dark/5 dark:border-white/5">
+    <div className="border-t border-white/[0.04]">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between py-3 text-left group"
       >
-        <span className="text-sm font-medium text-her-dark/70 dark:text-her-cream/70 group-hover:text-her-red transition-colors">
+        <span className="text-[10px] uppercase tracking-[0.2em] text-white/30 transition-colors">
           {title}
         </span>
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className={`h-4 w-4 text-her-dark/30 dark:text-her-cream/30 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+          className={`h-3 w-3 text-white/15 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -83,18 +82,17 @@ const MasteryGauge: React.FC<{ mastery: number }> = ({ mastery }) => {
   return (
     <div className="relative w-24 h-24 mx-auto">
       <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
-        <circle cx="40" cy="40" r="36" fill="none" stroke="rgba(44,26,26,0.08)" className="dark:hidden" strokeWidth="5" />
-        <circle cx="40" cy="40" r="36" fill="none" stroke="rgba(255,255,255,0.06)" className="hidden dark:block" strokeWidth="5" />
+        <circle cx="40" cy="40" r="36" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
         <circle
           cx="40" cy="40" r="36" fill="none"
-          stroke="#D94436" strokeWidth="5" strokeLinecap="round"
+          stroke="rgba(242,232,220,0.40)" strokeWidth="5" strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          style={{ transition: 'stroke-dashoffset 0.5s ease', opacity: 0.7 }}
+          style={{ transition: 'stroke-dashoffset 0.5s ease' }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-lg font-light text-her-dark/70 dark:text-her-cream/70">{pct}%</span>
+        <span className="text-lg font-light text-white/50">{pct}%</span>
       </div>
     </div>
   );
@@ -317,7 +315,7 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
 
   const prereqs = concept.prerequisites.map(id => curriculum[id]).filter(Boolean);
 
-  const tierColor = TIER_CONFIG[concept.tier as Tier].color;
+  const tierLabel = TIER_CONFIG[concept.tier as Tier].label;
 
   const handleGenerateInsight = async () => {
     setIsLoadingAI(true);
@@ -327,10 +325,10 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/10 dark:bg-black/30 backdrop-blur-[2px] z-40 flex items-start justify-end" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="node-detail-title">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-40 flex items-start justify-end" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="node-detail-title">
       <div
         ref={modalRef}
-        className="h-full w-full max-w-md glass-strong rounded-l-2xl overflow-y-auto animate-slide-in-right"
+        className="h-full w-full max-w-md bg-[#0A0707]/95 backdrop-blur-xl border-l border-white/[0.06] rounded-l-2xl overflow-y-auto animate-slide-in-right"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
@@ -339,24 +337,30 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <Badge tier={concept.tier as Tier} />
-                {mastered && <Badge label="Mastered" variant="status" />}
+                <span className="text-[10px] uppercase tracking-[0.2em] text-white/30">
+                  T{concept.tier} &mdash; {tierLabel}
+                </span>
+                {mastered && (
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-white/30">
+                    Mastered
+                  </span>
+                )}
               </div>
-              <h2 id="node-detail-title" className="text-xl font-semibold text-her-dark dark:text-her-cream">
+              <h2 id="node-detail-title" className="text-xl font-light text-white/85 tracking-wide">
                 {concept.name}
               </h2>
               {timeSinceReview !== null && (
-                <p className="text-xs text-her-dark/40 dark:text-her-cream/40 mt-1">
+                <p className="text-xs text-white/30 mt-1">
                   Last reviewed {timeSinceReview === 0 ? 'today' : `${timeSinceReview} day${timeSinceReview !== 1 ? 's' : ''} ago`}
                 </p>
               )}
               {timeSinceReview === null && (
-                <p className="text-xs text-her-dark/40 dark:text-her-cream/40 mt-1">Never reviewed</p>
+                <p className="text-xs text-white/30 mt-1">Never reviewed</p>
               )}
             </div>
             <button
               onClick={onClose}
-              className="p-1 text-her-dark/40 dark:text-her-cream/40 hover:text-her-dark dark:hover:text-her-cream rounded transition-colors ml-2 shrink-0"
+              className="p-1 text-white/25 hover:text-white/60 rounded transition-colors ml-2 shrink-0"
               aria-label="Close Panel"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -367,22 +371,18 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
 
           <MasteryGauge mastery={mastery} />
 
-          <p className="font-serif text-sm text-her-dark/70 dark:text-her-cream/70 leading-relaxed mt-4 mb-4">
+          <p className="text-sm text-white/50 font-light leading-relaxed mt-4 mb-4">
             {concept.description}
           </p>
 
           {prereqs.length > 0 && (
             <div className="mb-4">
-              <p className="text-xs text-her-dark/40 dark:text-her-cream/40 mb-1.5">Prerequisites:</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-1.5">Prerequisites</p>
               <div className="flex flex-wrap gap-1.5">
                 {prereqs.map(p => (
                   <span
                     key={p.id}
-                    className="text-xs px-2 py-0.5 rounded-full"
-                    style={{
-                      backgroundColor: `${TIER_CONFIG[p.tier as Tier].color}15`,
-                      color: TIER_CONFIG[p.tier as Tier].color,
-                    }}
+                    className="text-xs px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40"
                   >
                     {p.name} {getMastery(p.id) >= MASTERY_THRESHOLD ? '\u2713' : ''}
                   </span>
@@ -392,7 +392,7 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
           )}
 
           <AccordionSection title="How It Works" defaultOpen={false}>
-            <p className="font-serif text-sm text-her-dark/70 dark:text-her-cream/70 leading-relaxed">
+            <p className="text-sm text-white/50 font-light leading-relaxed">
               {concept.detailedDescription}
             </p>
           </AccordionSection>
@@ -411,13 +411,12 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
 
           {concept.explorationId && onOpenExploration && (
             <AccordionSection title="Try It">
-              <p className="text-sm text-her-dark/50 dark:text-her-cream/50 mb-3 font-serif">
+              <p className="text-sm text-white/50 font-light mb-3">
                 Explore this concept hands-on with an interactive simulation.
               </p>
               <button
                 onClick={() => onOpenExploration(concept.explorationId!)}
-                className="w-full py-2.5 px-4 text-white text-sm font-medium rounded-lg transition-all hover:shadow-lg active:scale-[0.98]"
-                style={{ backgroundColor: tierColor }}
+                className="w-full py-2.5 px-4 text-white/80 text-[10px] uppercase tracking-[0.2em] font-light rounded-full transition-all hover:bg-white/[0.15] active:scale-[0.98] bg-white/[0.10] border border-white/[0.10]"
               >
                 Open Interactive Exploration
               </button>
@@ -438,10 +437,10 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
                       disabled={!hasQuizzes}
                       className={`px-3 py-1 text-xs rounded-full transition-all ${
                         selectedDifficulty === d
-                          ? 'bg-white dark:bg-white/15 text-her-dark dark:text-her-cream shadow-sm'
+                          ? 'bg-white/[0.12] text-white/70'
                           : hasQuizzes
-                            ? 'bg-her-dark/5 dark:bg-white/5 text-her-dark/60 dark:text-her-cream/60 hover:bg-her-dark/10 dark:hover:bg-white/10'
-                            : 'opacity-30 cursor-not-allowed bg-her-dark/5 dark:bg-white/5 text-her-dark/40 dark:text-her-cream/40'
+                            ? 'bg-white/[0.05] text-white/40 hover:bg-white/[0.08]'
+                            : 'opacity-30 cursor-not-allowed bg-white/[0.05] text-white/30'
                       }`}
                     >
                       {labels[d - 1]} {d === recommended && hasQuizzes ? '*' : ''}
@@ -453,17 +452,13 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
               {currentQuiz ? (
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-medium ${
-                      currentQuiz.type === 'multiple-choice' ? 'bg-her-red/10 text-her-red' :
-                      currentQuiz.type === 'fill-blank' ? 'bg-purple-500/10 text-purple-400' :
-                      'bg-amber-500/10 text-amber-400'
-                    }`}>
+                    <span className="text-[10px] uppercase tracking-[0.2em] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/30">
                       {currentQuiz.type === 'multiple-choice' ? 'Multiple Choice' :
                        currentQuiz.type === 'fill-blank' ? 'Fill in the Blank' : 'Ordering'}
                     </span>
                   </div>
 
-                  <p className="text-sm text-her-dark dark:text-her-cream font-medium mb-3">
+                  <p className="text-sm text-white/70 font-light mb-3">
                     {currentQuiz.question}
                   </p>
 
@@ -480,13 +475,13 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
                             className={`w-full text-left p-3 text-sm rounded-lg border transition-all ${
                               quizSubmitted
                                 ? isCorrect
-                                  ? 'border-emerald-500 bg-emerald-500/5 text-emerald-500'
+                                  ? 'border-her-cream/50 bg-her-cream/5 text-her-cream/70'
                                   : isSelected
-                                    ? 'border-red-500 bg-red-500/5 text-red-500'
-                                    : 'border-her-dark/10 dark:border-white/10 text-her-dark/40 dark:text-her-cream/40'
+                                    ? 'border-white/20 bg-white/[0.03] text-white/40'
+                                    : 'border-white/[0.06] text-white/30'
                                 : isSelected
-                                  ? 'border-her-red/50 bg-her-red/5 text-her-dark dark:text-her-cream'
-                                  : 'border-her-dark/10 dark:border-white/10 text-her-dark/70 dark:text-her-cream/70 hover:border-her-dark/20 dark:hover:border-white/20'
+                                  ? 'border-white/20 bg-white/[0.06] text-white/70'
+                                  : 'border-white/[0.06] text-white/50 hover:border-white/[0.12]'
                             }`}
                           >
                             {opt}
@@ -508,14 +503,14 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
                         className={`w-full p-3 text-sm rounded-lg border font-mono transition-all bg-transparent outline-none ${
                           quizSubmitted
                             ? isQuizCorrect()
-                              ? 'border-emerald-500 bg-emerald-500/5 text-emerald-500'
-                              : 'border-red-500 bg-red-500/5 text-red-500'
-                            : 'border-her-dark/10 dark:border-white/10 text-her-dark dark:text-her-cream focus:border-her-red/50'
+                              ? 'border-her-cream/50 bg-her-cream/5 text-her-cream/70'
+                              : 'border-white/20 bg-white/[0.03] text-white/40'
+                            : 'border-white/[0.08] text-white/70 focus:border-white/20'
                         }`}
                       />
                       {quizSubmitted && !isQuizCorrect() && (
-                        <p className="text-xs text-her-dark/40 dark:text-her-cream/40 mt-1.5 font-mono">
-                          Correct answer: <span className="text-emerald-500">{currentQuiz.correctAnswer as string}</span>
+                        <p className="text-xs text-white/30 mt-1.5 font-mono">
+                          Correct answer: <span className="text-her-cream/70">{currentQuiz.correctAnswer as string}</span>
                         </p>
                       )}
                     </div>
@@ -542,30 +537,30 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
                             className={`flex items-center gap-2 p-3 text-sm rounded-lg border transition-all select-none ${
                               quizSubmitted
                                 ? isCorrectPosition
-                                  ? 'border-emerald-500 bg-emerald-500/5 text-emerald-500'
+                                  ? 'border-her-cream/50 bg-her-cream/5 text-her-cream/70'
                                   : isWrongPosition
-                                    ? 'border-red-500 bg-red-500/5 text-red-500'
-                                    : 'border-her-dark/10 dark:border-white/10 text-her-dark/40 dark:text-her-cream/40'
+                                    ? 'border-white/20 bg-white/[0.03] text-white/40'
+                                    : 'border-white/[0.06] text-white/30'
                                 : dragIdx === idx
-                                  ? 'border-her-red/50 bg-her-red/5 text-her-dark dark:text-her-cream scale-[1.02]'
-                                  : 'border-her-dark/10 dark:border-white/10 text-her-dark/70 dark:text-her-cream/70 hover:border-her-dark/20 dark:hover:border-white/20 cursor-grab'
+                                  ? 'border-white/20 bg-white/[0.06] text-white/70 scale-[1.02]'
+                                  : 'border-white/[0.06] text-white/50 hover:border-white/[0.12] cursor-grab'
                             }`}
                           >
-                            <span className="text-xs text-her-dark/40 dark:text-her-cream/40 w-5 shrink-0">{idx + 1}.</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-her-dark/40 dark:text-her-cream/40 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <span className="text-xs text-white/30 w-5 shrink-0">{idx + 1}.</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-white/20 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16" />
                             </svg>
                             <span className="flex-1">{item}</span>
-                            {quizSubmitted && isCorrectPosition && <span className="text-emerald-500 text-xs">&#10003;</span>}
-                            {quizSubmitted && isWrongPosition && <span className="text-red-500 text-xs">&#10007;</span>}
+                            {quizSubmitted && isCorrectPosition && <span className="text-her-cream/70 text-xs">&#10003;</span>}
+                            {quizSubmitted && isWrongPosition && <span className="text-white/40 text-xs">&#10007;</span>}
                           </div>
                         );
                       })}
                       {quizSubmitted && !isQuizCorrect() && (
-                        <div className="mt-2 p-2 rounded-lg bg-her-dark/5 dark:bg-white/5 border border-her-dark/10 dark:border-white/10">
-                          <p className="text-xs text-her-dark/40 dark:text-her-cream/40 mb-1">Correct order:</p>
+                        <div className="mt-2 p-2 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+                          <p className="text-xs text-white/30 mb-1">Correct order:</p>
                           {(currentQuiz.correctAnswer as string[]).map((item, i) => (
-                            <p key={i} className="text-xs text-emerald-500/80 ml-2">{i + 1}. {item}</p>
+                            <p key={i} className="text-xs text-her-cream/60 ml-2">{i + 1}. {item}</p>
                           ))}
                         </div>
                       )}
@@ -580,7 +575,7 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
                       {hintsRevealed > 0 && (
                         <div className="space-y-1 mb-2">
                           {currentQuiz.hints.slice(0, hintsRevealed).map((hint, i) => (
-                            <p key={i} className="text-xs text-amber-500 dark:text-amber-400 bg-amber-500/10 px-2 py-1 rounded">
+                            <p key={i} className="text-xs text-white/40 bg-white/[0.04] px-2 py-1 rounded">
                               Hint {i + 1}: {hint}
                             </p>
                           ))}
@@ -589,7 +584,7 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
                       {hintsRevealed < currentQuiz.hints.length && (
                         <button
                           onClick={() => setHintsRevealed(prev => prev + 1)}
-                          className="text-xs text-amber-500 hover:text-amber-400"
+                          className="text-xs text-white/30 hover:text-white/50 transition-colors"
                         >
                           Show hint ({hintsRevealed}/{currentQuiz.hints.length})
                         </button>
@@ -601,14 +596,14 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
                     <button
                       onClick={handleQuizSubmit}
                       disabled={!isQuizAnswered()}
-                      className="w-full py-2 bg-white dark:bg-white/15 text-her-dark dark:text-her-cream text-sm rounded-full disabled:opacity-50 transition-all"
+                      className="w-full py-2 bg-white/[0.10] border border-white/[0.10] text-white/80 text-[10px] uppercase tracking-[0.2em] rounded-full disabled:opacity-50 transition-all hover:bg-white/[0.15]"
                     >
                       Submit Answer
                     </button>
                   ) : (
                     <div>
                       <motion.p
-                        className={`text-sm mb-2 ${isQuizCorrect() ? 'text-emerald-500' : 'text-red-500'}`}
+                        className={`text-sm mb-2 ${isQuizCorrect() ? 'text-her-cream/70' : 'text-white/40'}`}
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ type: "spring", damping: 15, stiffness: 200 }}
@@ -622,13 +617,13 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
                               : "Not quite \u2014 let's review the explanation together."}
                       </motion.p>
                       {currentQuiz.explanation && (
-                        <p className="text-xs text-her-dark/40 dark:text-her-cream/40 mb-3 font-serif italic">
+                        <p className="text-white/30 text-xs font-light italic mb-3">
                           {currentQuiz.explanation}
                         </p>
                       )}
                       <button
                         onClick={handleNextQuiz}
-                        className="w-full py-2 bg-white dark:bg-white/15 text-her-dark dark:text-her-cream text-sm rounded-full transition-all"
+                        className="w-full py-2 bg-white/[0.10] border border-white/[0.10] text-white/80 text-[10px] uppercase tracking-[0.2em] rounded-full transition-all hover:bg-white/[0.15]"
                       >
                         Next Question
                       </button>
@@ -636,33 +631,30 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-her-dark/40 dark:text-her-cream/40">No quizzes at this difficulty level.</p>
+                <p className="text-xs text-white/30">No quizzes at this difficulty level.</p>
               )}
             </AccordionSection>
           )}
 
           {concept.resources.length > 0 && (
             <AccordionSection title="Learn More">
-              <div className="space-y-2">
-                {concept.resources.map((resource, i) => {
-                  const icons: Record<string, string> = { paper: 'P', video: 'V', tutorial: 'T', tool: 'L' };
-                  return (
-                    <a
-                      key={i}
-                      href={resource.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2.5 p-2.5 rounded-lg glass border border-her-dark/10 dark:border-white/10 hover:border-her-red/30 transition-colors group"
-                    >
-                      <span className="w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center bg-her-red/10 text-her-red shrink-0">
-                        {icons[resource.type] || 'L'}
-                      </span>
-                      <span className="text-sm text-her-dark/70 dark:text-her-cream/70 group-hover:text-her-red transition-colors">
-                        {resource.title}
-                      </span>
-                    </a>
-                  );
-                })}
+              <div className="divide-y divide-white/[0.04]">
+                {concept.resources.map((resource, i) => (
+                  <a
+                    key={i}
+                    href={resource.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-baseline gap-2.5 py-2.5 transition-colors group"
+                  >
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-white/20 shrink-0">
+                      {resource.type}
+                    </span>
+                    <span className="text-sm text-white/50 group-hover:text-white/70 transition-colors">
+                      {resource.title}
+                    </span>
+                  </a>
+                ))}
               </div>
             </AccordionSection>
           )}
@@ -670,23 +662,23 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
           <AccordionSection title="AI Insight">
             {isLoadingAI ? (
               <div className="space-y-2 animate-pulse">
-                <div className="h-3 w-full rounded-full bg-her-dark/5 dark:bg-white/5" />
-                <div className="h-3 w-5/6 rounded-full bg-her-dark/5 dark:bg-white/5" />
-                <div className="h-3 w-4/6 rounded-full bg-her-dark/5 dark:bg-white/5" />
-                <p className="text-[10px] uppercase tracking-[0.2em] text-her-dark/30 dark:text-her-cream/30 mt-2">generating insight</p>
+                <div className="h-3 w-full rounded-full bg-white/[0.05]" />
+                <div className="h-3 w-5/6 rounded-full bg-white/[0.05]" />
+                <div className="h-3 w-4/6 rounded-full bg-white/[0.05]" />
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 mt-2">generating insight</p>
               </div>
             ) : aiInsight ? (
-              <div className="p-3 glass rounded-2xl">
-                <p className="font-serif text-sm text-her-dark/70 dark:text-her-cream/70 italic leading-relaxed">"{aiInsight}"</p>
+              <div className="p-3 bg-white/[0.04] border border-white/[0.06] rounded-2xl">
+                <p className="text-sm text-white/50 font-light italic leading-relaxed">"{aiInsight}"</p>
               </div>
             ) : (
               <div>
-                <p className="text-xs text-her-dark/40 dark:text-her-cream/40 mb-2 font-serif">
+                <p className="text-xs text-white/40 mb-2 font-light">
                   Get an AI-generated perspective on this concept.
                 </p>
                 <button
                   onClick={handleGenerateInsight}
-                  className="text-xs glass rounded-full text-her-dark/60 dark:text-her-cream/60 hover:text-her-red px-3 py-1.5 transition-colors"
+                  className="text-xs rounded-full text-white/50 hover:text-white/70 px-3 py-1.5 transition-colors bg-white/[0.06] border border-white/[0.08] hover:bg-white/[0.10]"
                 >
                   Generate Insight
                 </button>

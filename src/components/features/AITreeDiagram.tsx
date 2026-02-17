@@ -19,18 +19,18 @@ export const AITreeDiagram: React.FC<{
   const masteredSet = useMemo(() => new Set(masteredNodes), [masteredNodes]);
 
   const colors = useMemo(() => ({
-    link: isDark ? '#475569' : '#CBD5E1',
-    nodeFillParent: isDark ? '#1A2028' : '#F5F0EB',
-    nodeFillLeaf: isDark ? '#212A33' : '#FFFFFF',
-    nodeFillMastered: '#8BA88E',
-    nodeStrokeParent: '#8BA88E',
-    nodeStrokeLeaf: isDark ? '#475569' : '#CBD5E1',
-    nodeStrokeMastered: '#6B8A6E',
-    labelFill: isDark ? '#E2E8F0' : '#39464E',
-    labelFillMastered: isDark ? '#B8D4BA' : '#5A7A5D',
-    labelStroke: isDark ? '#0F1419' : '#FAF9F6',
-    hoverStroke: '#8BA88E',
-  }), [isDark]);
+    link: 'rgba(255,255,255,0.15)',
+    nodeFillParent: 'rgba(255,255,255,0.10)',
+    nodeFillLeaf: 'rgba(255,255,255,0.06)',
+    nodeFillMastered: 'rgba(242,232,220,0.40)',
+    nodeStrokeParent: 'rgba(255,255,255,0.25)',
+    nodeStrokeLeaf: 'rgba(255,255,255,0.12)',
+    nodeStrokeMastered: 'rgba(242,232,220,0.50)',
+    labelFill: 'rgba(255,255,255,0.60)',
+    labelFillMastered: 'rgba(242,232,220,0.70)',
+    labelStroke: 'rgba(10,7,7,0.90)',
+    hoverStroke: 'rgba(242,232,220,0.60)',
+  }), []);
 
   const root = useMemo(() => {
     const hierarchy = d3.hierarchy<TreeNode>(data);
@@ -62,7 +62,7 @@ export const AITreeDiagram: React.FC<{
 
       const glowFilter = defs.append("filter").attr("id", "sage-glow");
       glowFilter.append("feGaussianBlur").attr("stdDeviation", "3").attr("result", "blur");
-      glowFilter.append("feFlood").attr("flood-color", "#8BA88E").attr("flood-opacity", "0.4").attr("result", "color");
+      glowFilter.append("feFlood").attr("flood-color", "#F2E8DC").attr("flood-opacity", "0.4").attr("result", "color");
       glowFilter.append("feComposite").attr("in", "color").attr("in2", "blur").attr("operator", "in").attr("result", "colorBlur");
       const feMerge = glowFilter.append("feMerge");
       feMerge.append("feMergeNode").attr("in", "colorBlur");
@@ -70,7 +70,7 @@ export const AITreeDiagram: React.FC<{
 
       const masteredGlow = defs.append("filter").attr("id", "mastered-glow");
       masteredGlow.append("feGaussianBlur").attr("stdDeviation", "4").attr("result", "blur");
-      masteredGlow.append("feFlood").attr("flood-color", "#8BA88E").attr("flood-opacity", "0.6").attr("result", "color");
+      masteredGlow.append("feFlood").attr("flood-color", "#F2E8DC").attr("flood-opacity", "0.6").attr("result", "color");
       masteredGlow.append("feComposite").attr("in", "color").attr("in2", "blur").attr("operator", "in").attr("result", "colorBlur");
       const feMergeMastered = masteredGlow.append("feMerge");
       feMergeMastered.append("feMergeNode").attr("in", "colorBlur");
@@ -78,7 +78,7 @@ export const AITreeDiagram: React.FC<{
 
       const searchGlow = defs.append("filter").attr("id", "search-glow");
       searchGlow.append("feGaussianBlur").attr("stdDeviation", "5").attr("result", "blur");
-      searchGlow.append("feFlood").attr("flood-color", "#8BA88E").attr("flood-opacity", "0.5").attr("result", "color");
+      searchGlow.append("feFlood").attr("flood-color", "#F2E8DC").attr("flood-opacity", "0.5").attr("result", "color");
       searchGlow.append("feComposite").attr("in", "color").attr("in2", "blur").attr("operator", "in").attr("result", "colorBlur");
       const feMergeSearch = searchGlow.append("feMerge");
       feMergeSearch.append("feMergeNode").attr("in", "colorBlur");
@@ -185,9 +185,9 @@ export const AITreeDiagram: React.FC<{
         .attr("dy", "0.31em")
         .text((d: any) => d.data.name)
         .style("fill-opacity", 1e-6)
-        .style("font-family", "'Space Grotesk', sans-serif")
+        .style("font-family", "'Inter', sans-serif")
         .style("font-size", "12px")
-        .style("font-weight", "500")
+        .style("font-weight", "300")
         .style("fill", (d: any) => masteredSet.has(d.data.id) ? colors.labelFillMastered : colors.labelFill)
         .style("pointer-events", "none")
         .style("paint-order", "stroke")
@@ -273,7 +273,7 @@ export const AITreeDiagram: React.FC<{
     }
     return () => resizeObserver.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, masteredNodes, isDark, colors]);
+  }, [data, masteredNodes, colors]);
 
   // Search effect
   useEffect(() => {

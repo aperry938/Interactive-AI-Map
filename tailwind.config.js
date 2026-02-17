@@ -10,29 +10,14 @@ export default {
         'her-cream': '#F2E8DC',
         'her-dark': '#2C1A1A',
         'her-soft': '#E6B8A2',
-        // Semantic learning colors
-        tier: {
-          1: '#3B82F6', // blue — foundations
-          2: '#8B5CF6', // purple — core ML
-          3: '#EC4899', // pink — deep learning
-          4: '#F59E0B', // amber — advanced
-          5: '#10B981', // emerald — frontiers
-        },
-        learn: {
-          structure: '#3B82F6',
-          attention: '#F59E0B',
-          error: '#EF4444',
-          convergence: '#10B981',
-        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        serif: ['Lora', 'Georgia', 'serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       animation: {
-        drift: 'drift 20s ease-in-out infinite',
-        'drift-slow': 'drift-slow 30s ease-in-out infinite',
+        drift: 'drift 35s ease-in-out infinite',
+        'drift-slow': 'drift-slow 45s ease-in-out infinite',
         'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         'slide-in-right': 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
@@ -49,7 +34,7 @@ export default {
           '50%': { transform: 'translate(-25px, -15px) scale(1.03)' },
         },
         slideUp: {
-          from: { opacity: '0', transform: 'translateY(16px)' },
+          from: { opacity: '0', transform: 'translateY(8px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
         slideInRight: {
@@ -66,12 +51,8 @@ export default {
         },
       },
       boxShadow: {
-        'glow-blue': '0 0 15px rgba(59, 130, 246, 0.25)',
-        'glow-purple': '0 0 15px rgba(139, 92, 246, 0.25)',
-        'glow-pink': '0 0 15px rgba(236, 72, 153, 0.25)',
-        'glow-amber': '0 0 15px rgba(245, 158, 11, 0.25)',
-        'glow-green': '0 0 15px rgba(16, 185, 129, 0.25)',
         'glow-white': '0 0 20px rgba(255, 255, 255, 0.15)',
+        'glow-warm': '0 0 20px rgba(242, 232, 220, 0.15)',
       },
     },
   },

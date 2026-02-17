@@ -30,7 +30,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
       <div className="absolute top-2 right-2 z-10">
         <button
           onClick={handleCopy}
-          className="px-2 py-1 text-xs rounded glass text-her-cream/60 hover:text-her-cream opacity-0 group-hover:opacity-100 transition-opacity"
+          className="px-2 py-1 text-xs rounded glass text-white/40 hover:text-white/70 opacity-0 group-hover:opacity-100 transition-opacity"
         >
           Copy
         </button>

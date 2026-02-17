@@ -18,7 +18,7 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({ quiz, onComplete }
 
     return (
         <div role="group" aria-labelledby="quiz-question">
-            <h3 id="quiz-question" className="font-medium text-sm text-her-dark dark:text-her-cream mb-3">{quiz.question}</h3>
+            <h3 id="quiz-question" className="font-light text-sm text-white/85 mb-3">{quiz.question}</h3>
             <div className="space-y-2" role="radiogroup" aria-label="Answer options">
                 {quiz.options.map((option) => {
                     const isCorrect = option === quiz.correctAnswer;
@@ -27,17 +27,17 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({ quiz, onComplete }
                     let classes = "w-full text-left p-3 rounded-lg border text-sm transition-all duration-200 ";
                     if (isSubmitted) {
                         if (isCorrect) {
-                            classes += "border-emerald-500/50 bg-emerald-500/5 text-emerald-500";
+                            classes += "border-her-cream/50 bg-her-cream/5 text-her-cream/70";
                         } else if (isSelected) {
-                            classes += "border-red-500/50 bg-red-500/5 text-red-500";
+                            classes += "border-white/20 bg-white/[0.03] text-white/40";
                         } else {
-                            classes += "border-her-dark/10 dark:border-white/10 text-her-dark/40 dark:text-her-cream/40";
+                            classes += "border-white/[0.06] text-white/30";
                         }
                     } else {
                         if (isSelected) {
-                            classes += "border-her-red/50 bg-her-red/5 text-her-dark dark:text-her-cream";
+                            classes += "border-white/20 bg-white/[0.06] text-white/80";
                         } else {
-                            classes += "border-her-dark/10 dark:border-white/10 text-her-dark/70 dark:text-her-cream/70 hover:border-her-dark/20 dark:hover:border-white/20";
+                            classes += "border-white/[0.06] text-white/50 hover:border-white/[0.12]";
                         }
                     }
 
@@ -58,7 +58,7 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({ quiz, onComplete }
                 <button
                     onClick={handleSubmit}
                     disabled={selectedAnswer === null}
-                    className="mt-3 w-full py-2.5 px-4 bg-white dark:bg-white/15 text-her-dark dark:text-her-cream text-sm font-medium rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="mt-3 w-full py-2.5 px-4 bg-white/[0.10] border border-white/[0.10] text-white/80 text-sm font-light rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                     Submit Answer
                 </button>
@@ -66,7 +66,7 @@ export const QuizComponent: React.FC<QuizComponentProps> = ({ quiz, onComplete }
 
             {isSubmitted && quiz.explanation && (
                 <div className="mt-3 p-3 glass rounded-2xl">
-                    <p className="font-serif text-xs text-her-dark/60 dark:text-her-cream/60 leading-relaxed">
+                    <p className="text-xs text-white/40 font-light leading-relaxed">
                         {quiz.explanation}
                     </p>
                 </div>

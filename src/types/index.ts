@@ -137,13 +137,13 @@ export interface LearnerProfile {
   telemetryLog: TelemetryEvent[];
 }
 
-/** Tier color/label mappings */
+/** Tier color/label mappings — monochrome white at increasing opacity */
 export const TIER_CONFIG: Record<Tier, { label: string; color: string; bgClass: string; textClass: string }> = {
-  1: { label: 'Foundations', color: '#3B82F6', bgClass: 'bg-blue-500', textClass: 'text-blue-400' },
-  2: { label: 'Core ML', color: '#8B5CF6', bgClass: 'bg-purple-500', textClass: 'text-purple-400' },
-  3: { label: 'Deep Learning', color: '#EC4899', bgClass: 'bg-pink-500', textClass: 'text-pink-400' },
-  4: { label: 'Advanced', color: '#F59E0B', bgClass: 'bg-amber-500', textClass: 'text-amber-400' },
-  5: { label: 'Frontiers', color: '#10B981', bgClass: 'bg-emerald-500', textClass: 'text-emerald-400' },
+  1: { label: 'Foundations', color: 'rgba(255,255,255,0.40)', bgClass: 'bg-white/40', textClass: 'text-white/40' },
+  2: { label: 'Core ML', color: 'rgba(255,255,255,0.50)', bgClass: 'bg-white/50', textClass: 'text-white/50' },
+  3: { label: 'Deep Learning', color: 'rgba(255,255,255,0.55)', bgClass: 'bg-white/55', textClass: 'text-white/55' },
+  4: { label: 'Advanced', color: 'rgba(255,255,255,0.65)', bgClass: 'bg-white/65', textClass: 'text-white/65' },
+  5: { label: 'Frontiers', color: 'rgba(255,255,255,0.75)', bgClass: 'bg-white/75', textClass: 'text-white/75' },
 };
 
 /** Mastery threshold for BKT */

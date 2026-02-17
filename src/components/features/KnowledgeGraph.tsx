@@ -207,11 +207,11 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
         ctx.lineTo(target.x, target.y);
 
         if (link.type === 'prerequisite') {
-          ctx.strokeStyle = dimmed || searchDimmed ? 'rgba(44,26,26,0.06)' : 'rgba(44,26,26,0.15)';
+          ctx.strokeStyle = dimmed || searchDimmed ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.12)';
           ctx.lineWidth = 1.5;
           ctx.setLineDash([]);
         } else {
-          ctx.strokeStyle = dimmed || searchDimmed ? 'rgba(44,26,26,0.03)' : 'rgba(44,26,26,0.08)';
+          ctx.strokeStyle = dimmed || searchDimmed ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.06)';
           ctx.lineWidth = 1;
           ctx.setLineDash([4, 4]);
         }
@@ -229,7 +229,7 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
           ctx.lineTo(ax - 6 * Math.cos(angle - 0.4), ay - 6 * Math.sin(angle - 0.4));
           ctx.lineTo(ax - 6 * Math.cos(angle + 0.4), ay - 6 * Math.sin(angle + 0.4));
           ctx.closePath();
-          ctx.fillStyle = 'rgba(44,26,26,0.2)';
+          ctx.fillStyle = 'rgba(255,255,255,0.15)';
           ctx.fill();
         }
       }
@@ -302,14 +302,14 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
           ctx.arc(node.x, node.y, effectiveRadius, 0, Math.PI * 2);
 
           if (dimmed) {
-            ctx.fillStyle = 'rgba(44,26,26,0.08)';
+            ctx.fillStyle = 'rgba(255,255,255,0.04)';
             ctx.fill();
-            ctx.strokeStyle = 'rgba(44,26,26,0.06)';
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
             ctx.lineWidth = 1;
           } else if (locked) {
-            ctx.fillStyle = 'rgba(255,255,255,0.15)';
+            ctx.fillStyle = 'rgba(255,255,255,0.08)';
             ctx.fill();
-            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
             ctx.lineWidth = 1;
           } else {
             // Active nodes: white with opacity based on tier (higher tiers slightly more opaque)
@@ -325,7 +325,7 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
 
         // Lock icon
         if (locked && !dimmed && revealScale > 0.7) {
-          const lockColor = 'rgba(44,26,26,0.3)';
+          const lockColor = 'rgba(255,255,255,0.15)';
           const lockSize = effectiveRadius * 0.35;
           ctx.fillStyle = lockColor;
           ctx.strokeStyle = lockColor;
@@ -337,7 +337,7 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
         }
         // Mastery checkmark
         else if (mastery >= MASTERY_THRESHOLD && !dimmed && revealScale > 0.7) {
-          ctx.fillStyle = 'rgba(44,26,26,0.6)';
+          ctx.fillStyle = 'rgba(242,232,220,0.5)';
           ctx.font = `bold ${effectiveRadius * 0.8}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -353,10 +353,10 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
           const textWidth = ctx.measureText(c.name).width;
           ctx.globalAlpha = revealScale;
           // Label background
-          ctx.fillStyle = 'rgba(255,255,255,0.7)';
+          ctx.fillStyle = 'rgba(10,7,7,0.85)';
           ctx.fillRect(node.x - textWidth / 2 - 3, labelY - 1, textWidth + 6, 14);
           // Label text
-          ctx.fillStyle = dimmed ? 'rgba(44,26,26,0.3)' : isSearchMatch && search ? '#D94436' : 'rgba(44,26,26,0.7)';
+          ctx.fillStyle = dimmed ? 'rgba(255,255,255,0.20)' : isSearchMatch && search ? '#D94436' : 'rgba(255,255,255,0.50)';
           ctx.fillText(c.name, node.x, labelY);
           ctx.globalAlpha = 1;
         }
@@ -626,30 +626,30 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
               className="w-2.5 h-2.5 rounded-full bg-white/60"
               style={{ opacity: 0.4 + t * 0.12 }}
             />
-            <span className="text-her-dark/40 dark:text-her-cream/40">
+            <span className="text-white/30">
               T{t}
             </span>
           </div>
         ))}
       </div>
       {/* Revealed node count */}
-      <div className="absolute bottom-4 right-4 glass rounded-2xl px-3 py-2 text-xs text-her-dark/40 dark:text-her-cream/40">
+      <div className="absolute bottom-4 right-4 glass rounded-2xl px-3 py-2 text-xs text-white/30">
         {Object.keys(curriculum).length} concepts
       </div>
       {/* Hovered node tooltip */}
       {hoveredNode && curriculum[hoveredNode] && (
-        <div className="absolute top-4 right-4 glass-strong rounded-2xl p-3 max-w-xs pointer-events-none animate-fade-in">
-          <div className="text-sm font-semibold text-her-dark dark:text-her-cream">
+        <div className="absolute top-4 right-4 bg-[#0A0707]/90 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-3 max-w-xs pointer-events-none animate-fade-in">
+          <div className="text-sm font-light text-white/85">
             {curriculum[hoveredNode].name}
           </div>
-          <div className="text-xs text-her-dark/50 dark:text-her-cream/50 mt-1">
+          <div className="text-xs text-white/40 mt-1">
             {curriculum[hoveredNode].description}
           </div>
           <div className="flex items-center gap-2 mt-2">
-            <span className="text-[10px] uppercase tracking-wider text-her-dark/30 dark:text-her-cream/30">
+            <span className="text-[10px] uppercase tracking-wider text-white/20">
               Tier {curriculum[hoveredNode].tier}
             </span>
-            <span className="text-[10px] text-her-dark/30 dark:text-her-cream/30">
+            <span className="text-[10px] text-white/20">
               {Math.round(getMastery(hoveredNode) * 100)}% mastery
             </span>
           </div>

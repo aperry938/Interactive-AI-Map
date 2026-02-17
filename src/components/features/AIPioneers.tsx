@@ -32,10 +32,10 @@ interface AIMethod {
 }
 
 const ERAS = {
-  foundations: { label: 'Foundations', years: '1940s\u20131960s', color: '#3B82F6', description: 'The birth of artificial intelligence as a field' },
-  'winter-revival': { label: 'AI Winter & Revival', years: '1970s\u20131990s', color: '#8B5CF6', description: 'Setbacks, neural network resurgence, and expert systems' },
-  'deep-learning': { label: 'Deep Learning Revolution', years: '2000s\u20132010s', color: '#EC4899', description: 'GPUs, big data, and the rise of deep neural networks' },
-  modern: { label: 'Modern Era', years: '2020s+', color: '#10B981', description: 'Foundation models, agents, and the AI boom' },
+  foundations: { label: 'Foundations', years: '1940s\u20131960s', color: 'rgba(255,255,255,0.35)', description: 'The birth of artificial intelligence as a field' },
+  'winter-revival': { label: 'AI Winter & Revival', years: '1970s\u20131990s', color: 'rgba(255,255,255,0.45)', description: 'Setbacks, neural network resurgence, and expert systems' },
+  'deep-learning': { label: 'Deep Learning Revolution', years: '2000s\u20132010s', color: 'rgba(255,255,255,0.55)', description: 'GPUs, big data, and the rise of deep neural networks' },
+  modern: { label: 'Modern Era', years: '2020s+', color: 'rgba(255,255,255,0.65)', description: 'Foundation models, agents, and the AI boom' },
 } as const;
 
 const PIONEERS: Pioneer[] = [
@@ -102,12 +102,10 @@ const AI_METHODS: AIMethod[] = [
 
 const PioneerCard: React.FC<{ pioneer: Pioneer; index: number }> = ({ pioneer, index }) => {
   const [expanded, setExpanded] = useState(false);
-  const eraConfig = ERAS[pioneer.era];
 
   return (
     <motion.div
-      className="glass rounded-2xl p-4 border-l-[3px] cursor-pointer"
-      style={{ borderLeftColor: eraConfig.color }}
+      className="bg-white/[0.06] backdrop-blur-[12px] border border-white/[0.08] rounded-2xl p-4 border-l border-white/[0.06] cursor-pointer"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.04 }}
@@ -115,14 +113,14 @@ const PioneerCard: React.FC<{ pioneer: Pioneer; index: number }> = ({ pioneer, i
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <h3 className="font-semibold text-her-dark dark:text-her-cream text-sm">{pioneer.name}</h3>
-          <p className="text-xs text-her-dark/50 dark:text-her-cream/50">{pioneer.years}</p>
-          <p className="text-xs mt-0.5" style={{ color: eraConfig.color }}>{pioneer.role}</p>
-          <p className="text-[11px] text-her-dark/50 dark:text-her-cream/50">{pioneer.institution}</p>
+          <h3 className="text-sm font-light text-white/85">{pioneer.name}</h3>
+          <p className="text-xs text-white/30">{pioneer.years}</p>
+          <p className="text-xs mt-0.5 text-white/40">{pioneer.role}</p>
+          <p className="text-[11px] text-white/25">{pioneer.institution}</p>
         </div>
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className={`h-4 w-4 text-her-dark/40 dark:text-her-cream/40 transition-transform duration-200 mt-1 shrink-0 ${expanded ? 'rotate-180' : ''}`}
+          className={`h-4 w-4 text-white/30 transition-transform duration-200 mt-1 shrink-0 ${expanded ? 'rotate-180' : ''}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -137,10 +135,10 @@ const PioneerCard: React.FC<{ pioneer: Pioneer; index: number }> = ({ pioneer, i
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <ul className="mt-2 space-y-1 border-t border-her-dark/5 dark:border-white/5 pt-2">
+            <ul className="mt-2 space-y-1 border-t border-white/[0.04] pt-2">
               {pioneer.contributions.map((c, i) => (
-                <li key={i} className="text-xs text-her-dark/60 dark:text-her-cream/60 flex items-start gap-1.5">
-                  <span className="w-1 h-1 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: eraConfig.color }} />
+                <li key={i} className="text-xs text-white/40 flex items-start gap-1.5">
+                  <span className="w-1 h-1 rounded-full bg-white/30 mt-1.5 shrink-0" />
                   {c}
                 </li>
               ))}
@@ -157,17 +155,17 @@ const ToolCard: React.FC<{ tool: AITool; index: number }> = ({ tool, index }) =>
     href={tool.url}
     target="_blank"
     rel="noopener noreferrer"
-    className="glass rounded-2xl p-3 hover:border-her-red/30 border border-transparent transition-colors group block"
+    className="bg-white/[0.06] backdrop-blur-[12px] border border-white/[0.08] rounded-2xl p-3 hover:border-white/[0.15] transition-colors group block"
     initial={{ opacity: 0, y: 8 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, delay: index * 0.03 }}
   >
     <div className="flex items-center justify-between mb-1">
-      <h4 className="text-sm font-medium text-her-dark dark:text-her-cream group-hover:text-her-red transition-colors">{tool.name}</h4>
-      <span className="text-[10px] bg-her-red/10 text-her-red px-1.5 py-0.5 rounded-full">{tool.category}</span>
+      <h4 className="text-sm font-light text-white/70 group-hover:text-white/85 transition-colors">{tool.name}</h4>
+      <span className="text-[10px] bg-white/[0.06] text-white/30 px-1.5 py-0.5 rounded-full">{tool.category}</span>
     </div>
-    <p className="text-xs text-her-dark/50 dark:text-her-cream/50 leading-relaxed">{tool.description}</p>
-    <p className="text-[10px] text-her-dark/50 dark:text-her-cream/50 mt-1">{tool.year}</p>
+    <p className="text-xs text-white/35 leading-relaxed">{tool.description}</p>
+    <p className="text-[10px] text-white/25 mt-1">{tool.year}</p>
   </motion.a>
 );
 
@@ -176,23 +174,23 @@ const MethodCard: React.FC<{ method: AIMethod; index: number }> = ({ method, ind
 
   return (
     <motion.div
-      className="glass rounded-2xl p-4 cursor-pointer"
+      className="bg-white/[0.06] backdrop-blur-[12px] border border-white/[0.08] rounded-2xl p-4 cursor-pointer"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.04 }}
       onClick={() => setExpanded(!expanded)}
     >
       <div className="flex items-start justify-between">
-        <h4 className="text-sm font-medium text-her-dark dark:text-her-cream flex-1">{method.name}</h4>
+        <h4 className="text-sm font-light text-white/85 flex-1">{method.name}</h4>
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className={`h-4 w-4 text-her-dark/40 dark:text-her-cream/40 transition-transform duration-200 shrink-0 ${expanded ? 'rotate-180' : ''}`}
+          className={`h-4 w-4 text-white/30 transition-transform duration-200 shrink-0 ${expanded ? 'rotate-180' : ''}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </div>
-      <p className="text-xs text-her-dark/50 dark:text-her-cream/50 mt-1 leading-relaxed">{method.description}</p>
+      <p className="text-xs text-white/40 mt-1 leading-relaxed">{method.description}</p>
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -202,16 +200,16 @@ const MethodCard: React.FC<{ method: AIMethod; index: number }> = ({ method, ind
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="mt-3 pt-2 border-t border-her-dark/5 dark:border-white/5 space-y-2">
+            <div className="mt-3 pt-2 border-t border-white/[0.04] space-y-2">
               <div>
-                <p className="text-[10px] text-her-dark/50 dark:text-her-cream/50 uppercase tracking-wider mb-1">Key Papers</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 mb-1">Key Papers</p>
                 {method.keyPapers.map((p, i) => (
-                  <p key={i} className="text-xs text-her-dark/60 dark:text-her-cream/60 italic">{p}</p>
+                  <p key={i} className="text-xs text-white/40 italic">{p}</p>
                 ))}
               </div>
               <div>
-                <p className="text-[10px] text-her-dark/50 dark:text-her-cream/50 uppercase tracking-wider mb-1">Impact</p>
-                <p className="text-xs text-emerald-400">{method.impact}</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 mb-1">Impact</p>
+                <p className="text-xs text-white/50">{method.impact}</p>
               </div>
             </div>
           </motion.div>
@@ -227,16 +225,16 @@ const MethodCard: React.FC<{ method: AIMethod; index: number }> = ({ method, ind
 
 const Timeline: React.FC = () => (
   <div className="relative mb-8">
-    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-tier-1 via-tier-3 to-tier-5 opacity-30" />
+    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-white/[0.08]" />
     {(Object.entries(ERAS) as [keyof typeof ERAS, typeof ERAS[keyof typeof ERAS]][]).map(([key, era]) => (
       <div key={key} className="relative pl-10 mb-6">
         <div
-          className="absolute left-2.5 w-3 h-3 rounded-full border-2 border-[#0F0A0A]"
-          style={{ backgroundColor: era.color, top: '4px' }}
+          className="absolute left-2.5 w-3 h-3 rounded-full bg-white/40 border-2 border-[#0A0707]"
+          style={{ top: '4px' }}
         />
-        <h3 className="text-sm font-semibold" style={{ color: era.color }}>{era.label}</h3>
-        <p className="text-xs text-her-dark/50 dark:text-her-cream/50">{era.years}</p>
-        <p className="text-xs text-her-dark/40 dark:text-her-cream/40 mt-0.5">{era.description}</p>
+        <h3 className="text-sm font-light text-white/50">{era.label}</h3>
+        <p className="text-xs text-white/30">{era.years}</p>
+        <p className="text-xs text-white/25 mt-0.5">{era.description}</p>
       </div>
     ))}
   </div>
@@ -262,7 +260,7 @@ export const AIPioneers: React.FC = () => {
         {/* Back button */}
         <button
           onClick={() => navigate('/learn')}
-          className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-her-dark/40 dark:text-her-cream/40 hover:text-her-red mb-8 transition-colors"
+          className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/30 hover:text-white/60 mb-8 transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -276,16 +274,16 @@ export const AIPioneers: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <h1 className="text-3xl font-light tracking-[0.05em] text-her-dark dark:text-her-cream mb-2">
+          <h1 className="text-3xl font-light tracking-[0.05em] text-white/85 mb-2">
             AI/ML Encyclopedia
           </h1>
-          <p className="text-sm text-her-dark/40 dark:text-her-cream/40 mb-8">
+          <p className="text-sm text-white/35 mb-8">
             Key figures, cutting-edge methods, and essential tools in artificial intelligence
           </p>
         </motion.div>
 
         {/* Tab navigation */}
-        <div className="flex gap-1 mb-8 glass rounded-full p-1">
+        <div className="flex gap-1 mb-8 bg-white/[0.06] backdrop-blur-[12px] border border-white/[0.08] rounded-full p-1">
           {([
             { id: 'pioneers' as Tab, label: 'Pioneers & History', count: PIONEERS.length },
             { id: 'methods' as Tab, label: 'Cutting-Edge Methods', count: AI_METHODS.length },
@@ -294,14 +292,14 @@ export const AIPioneers: React.FC = () => {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex-1 py-2 px-3 text-sm font-medium rounded-full transition-all ${
+              className={`flex-1 py-2 px-3 text-sm font-light rounded-full transition-all ${
                 tab === t.id
-                  ? 'bg-white dark:bg-white/15 text-her-dark dark:text-her-cream shadow-sm'
-                  : 'text-her-dark/50 dark:text-her-cream/50 hover:text-her-dark dark:hover:text-her-cream'
+                  ? 'bg-white/[0.12] text-white/85'
+                  : 'text-white/40 hover:text-white/60'
               }`}
             >
               {t.label}
-              <span className={`ml-1.5 text-xs ${tab === t.id ? 'text-her-dark/40 dark:text-her-cream/40' : 'text-her-dark/30 dark:text-her-cream/30'}`}>
+              <span className={`ml-1.5 text-xs ${tab === t.id ? 'text-white/40' : 'text-white/25'}`}>
                 ({t.count})
               </span>
             </button>
@@ -318,7 +316,7 @@ export const AIPioneers: React.FC = () => {
               <button
                 onClick={() => setEraFilter(null)}
                 className={`px-3 py-1 text-xs rounded-full transition-all ${
-                  eraFilter === null ? 'bg-white/20 text-her-dark dark:text-white' : 'bg-white/5 text-her-dark/40 dark:text-her-cream/40 hover:text-her-dark dark:hover:text-her-cream'
+                  eraFilter === null ? 'bg-white/[0.12] text-white/70 border border-white/20' : 'bg-white/[0.04] text-white/40 border border-transparent hover:text-white/60'
                 }`}
               >
                 All Eras
@@ -329,10 +327,9 @@ export const AIPioneers: React.FC = () => {
                   onClick={() => setEraFilter(eraFilter === key ? null : key)}
                   className={`px-3 py-1 text-xs rounded-full transition-all border ${
                     eraFilter === key
-                      ? 'border-current'
-                      : 'border-transparent hover:border-current/30'
+                      ? 'bg-white/[0.12] text-white/70 border-white/20'
+                      : 'border-transparent text-white/40 hover:text-white/60'
                   }`}
-                  style={{ color: era.color, backgroundColor: eraFilter === key ? `${era.color}15` : 'transparent' }}
                 >
                   {era.label}
                 </button>
@@ -350,7 +347,7 @@ export const AIPioneers: React.FC = () => {
         {/* Methods Tab */}
         {tab === 'methods' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-            <p className="text-sm text-her-dark/40 dark:text-her-cream/40 mb-6 font-serif">
+            <p className="text-sm text-white/35 mb-6 font-light">
               The most important architectural innovations and training techniques shaping AI in 2025\u20132026.
             </p>
             <div className="space-y-3">
@@ -364,7 +361,7 @@ export const AIPioneers: React.FC = () => {
         {/* Tools Tab */}
         {tab === 'tools' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-            <p className="text-sm text-her-dark/40 dark:text-her-cream/40 mb-6 font-serif">
+            <p className="text-sm text-white/35 mb-6 font-light">
               Essential frameworks, platforms, and tools for modern AI/ML development.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -376,8 +373,8 @@ export const AIPioneers: React.FC = () => {
         )}
 
         {/* Footer */}
-        <div className="mt-12 pt-8 border-t border-her-dark/5 dark:border-white/5">
-          <p className="text-xs text-her-dark/30 dark:text-her-cream/30">
+        <div className="mt-12 pt-8 border-t border-white/[0.04]">
+          <p className="text-xs text-white/20">
             Data compiled from TIME 100 AI (2025), Nobel Prize archives, ACM Turing Award records, and current research publications.
           </p>
         </div>
