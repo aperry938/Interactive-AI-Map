@@ -326,6 +326,29 @@ export const curriculum: Record<string, ConceptNode> = {
     ],
   },
 
+  'clustering': {
+    id: 'clustering',
+    name: 'Clustering (K-Means)',
+    description: 'Unsupervised learning: grouping data points so items in the same cluster are more similar than items in other clusters.',
+    detailedDescription: 'K-Means is the most common clustering algorithm. It partitions n observations into k clusters by iteratively: (1) assigning each point to the nearest centroid, and (2) recomputing centroids as the mean of assigned points. The algorithm converges when assignments stabilize. Choosing optimal k uses the elbow method or silhouette analysis. K-Means assumes convex, equally-sized clusters and is sensitive to initialization — k-means++ improves this. Alternatives include DBSCAN (density-based, arbitrary shapes) and hierarchical clustering.',
+    mathNotation: '\\arg\\min_S \\sum_{i=1}^{k} \\sum_{x \\in S_i} ||x - \\mu_i||^2',
+    tier: 2,
+    bloomLevel: 'apply',
+    prerequisites: ['data-preprocessing', 'evaluation-metrics'],
+    connections: ['ensemble-methods', 'feature-engineering'],
+    explorationId: 'clustering',
+    quizzes: [
+      { id: 'cl-1', question: 'What does K represent in K-Means?', difficulty: 1, type: 'multiple-choice', options: ['The number of features', 'The number of clusters', 'The number of iterations', 'The learning rate'], correctAnswer: 'The number of clusters', hints: ['K must be specified before running'], explanation: 'K is the number of clusters the algorithm will partition the data into. It must be specified before running.' },
+      { id: 'cl-2', question: 'What happens during the assignment step?', difficulty: 2, type: 'multiple-choice', options: ['Centroids are moved to cluster means', 'Each point is assigned to the nearest centroid', 'New centroids are randomly placed', 'Outliers are removed'], correctAnswer: 'Each point is assigned to the nearest centroid', hints: ['Think about distance calculations'], explanation: 'In the assignment step, each data point is assigned to the cluster whose centroid is nearest (minimum Euclidean distance).' },
+      { id: 'cl-3', question: 'Put the K-Means steps in order:', difficulty: 3, type: 'ordering', correctAnswer: ['Initialize K centroids', 'Assign points to nearest centroid', 'Recompute centroids as cluster means', 'Check for convergence'], hints: ['Initialization comes first', 'Assignment must happen before recomputing means'], explanation: 'K-Means alternates between assignment (assign points to nearest centroid) and update (recompute centroids), repeating until convergence.' },
+    ],
+    codeExample: `from sklearn.cluster import KMeans\nimport numpy as np\n\nX = np.random.randn(100, 2)\nkmeans = KMeans(n_clusters=3, random_state=42)\nlabels = kmeans.fit_predict(X)\ncenters = kmeans.cluster_centers_`,
+    resources: [
+      { title: 'Visualizing K-Means', url: 'https://www.naftaliharris.com/blog/visualizing-k-means-clustering/', type: 'tool' },
+      { title: 'Scikit-learn Clustering', url: 'https://scikit-learn.org/stable/modules/clustering.html', type: 'tutorial' },
+    ],
+  },
+
   // =========================================================================
   // TIER 3 — Deep Learning
   // =========================================================================

@@ -5,10 +5,11 @@ import { TIER_CONFIG, MASTERY_THRESHOLD } from '../../types';
 import { curriculum } from '../../data/curriculum';
 import { CodeBlock } from '../ui/CodeBlock';
 import { useLearner } from '../../stores/learnerStore';
-import { updateMastery, isMastered } from '../../engine/bkt';
+import { updateMastery, isMastered, getDefaultParams, applyForgetting, computeTransferBoosts } from '../../engine/bkt';
 import { selectDifficulty } from '../../engine/difficultyAdjuster';
 import { computeNextReview } from '../../engine/spacedRepetition';
 import { DEFAULT_BKT_PARAMS } from '../../types';
+import { ForgettingCurveChart } from './ForgettingCurveChart';
 import { generateInsight } from '../../services/gemini';
 import { createTelemetryEvent } from '../../services/telemetry';
 import { useToast } from '../../hooks/useToast';
@@ -234,6 +235,12 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
       } else {
         addToast(`Mastered: ${concept.name}!`, 'success');
       }
+
+      // Apply knowledge transfer boosts to connected, unattempted concepts
+      const boosts = computeTransferBoosts(conceptId, curriculum, conceptState ? { ...Object.fromEntries(Object.entries(curriculum).map(([id]) => [id, getConceptState(id)])) } : {});
+      for (const [boostId, boostedValue] of Object.entries(boosts)) {
+        setMastery(boostId, boostedValue);
+      }
     }
 
     if (correct) {
@@ -338,7 +345,7 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[10px] uppercase tracking-[0.2em] text-white/30">
-                  T{concept.tier} &mdash; {tierLabel}
+                  T{concept.tier} &mdash; {tierLabel} &mdash; {concept.bloomLevel}
                 </span>
                 {mastered && (
                   <span className="text-[10px] uppercase tracking-[0.2em] text-white/30">
@@ -658,6 +665,124 @@ export const NodeDetailModal: React.FC<NodeDetailModalProps> = ({
               </div>
             </AccordionSection>
           )}
+
+          <AccordionSection title="Mastery Model">
+            {(() => {
+              const params = getDefaultParams(concept.tier as Tier);
+              const recommended = selectDifficulty(mastery, conceptState.attemptHistory);
+              const diffLabels = ['Easy', 'Medium', 'Hard'];
+              const nextReviewTs = conceptState.nextReviewTimestamp;
+              const nextReviewDays = nextReviewTs > 0
+                ? Math.max(0, Math.ceil((nextReviewTs - Date.now()) / (24 * 60 * 60 * 1000)))
+                : null;
+
+              // Mastery trajectory from attempt history
+              const trajectoryPoints: Array<{ attempt: number; mastery: number }> = [];
+              if (conceptState.attemptHistory.length > 0) {
+                let m = params.pInit;
+                trajectoryPoints.push({ attempt: 0, mastery: m });
+                conceptState.attemptHistory.forEach((a, i) => {
+                  m = updateMastery(m, a.correct, params, a.hintsUsed, a.difficulty);
+                  trajectoryPoints.push({ attempt: i + 1, mastery: m });
+                });
+              }
+
+              return (
+                <div className="space-y-5">
+                  {/* BKT Parameters */}
+                  <div>
+                    <p className="text-[9px] uppercase tracking-[0.2em] text-white/25 mb-2">Bayesian Knowledge Tracing Parameters (Tier {concept.tier})</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { label: 'P(L\u2080)', value: params.pInit, desc: 'Initial knowledge' },
+                        { label: 'P(T)', value: params.pTransit, desc: 'Learning rate' },
+                        { label: 'P(S)', value: params.pSlip, desc: 'Slip probability' },
+                        { label: 'P(G)', value: params.pGuess, desc: 'Guess probability' },
+                      ].map(p => (
+                        <div key={p.label} className="bg-white/[0.03] rounded-lg px-3 py-2">
+                          <div className="flex items-baseline justify-between">
+                            <span className="text-xs font-mono text-her-cream/40">{p.label}</span>
+                            <span className="text-xs font-mono text-white/50 tabular-nums">{p.value.toFixed(2)}</span>
+                          </div>
+                          <span className="text-[9px] text-white/15">{p.desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mastery Trajectory */}
+                  {trajectoryPoints.length > 1 && (
+                    <div>
+                      <p className="text-[9px] uppercase tracking-[0.2em] text-white/25 mb-2">Mastery Trajectory ({conceptState.attemptHistory.length} attempts)</p>
+                      <svg width="100%" height="60" viewBox="0 0 280 60" className="block" role="img" aria-label="Mastery trajectory chart">
+                        {/* Threshold line */}
+                        <line x1="0" y1={60 - 0.85 * 55} x2="280" y2={60 - 0.85 * 55} stroke="rgba(242,232,220,0.12)" strokeWidth="0.5" strokeDasharray="3,3" />
+                        {/* Trajectory */}
+                        <polyline
+                          points={trajectoryPoints.map((p, i) => {
+                            const x = (i / Math.max(1, trajectoryPoints.length - 1)) * 270 + 5;
+                            const y = 55 - p.mastery * 50 + 2;
+                            return `${x},${y}`;
+                          }).join(' ')}
+                          fill="none"
+                          stroke="rgba(242,232,220,0.4)"
+                          strokeWidth="1.5"
+                          strokeLinejoin="round"
+                        />
+                        {/* Dots for each attempt */}
+                        {trajectoryPoints.map((p, i) => {
+                          const x = (i / Math.max(1, trajectoryPoints.length - 1)) * 270 + 5;
+                          const y = 55 - p.mastery * 50 + 2;
+                          return (
+                            <circle key={i} cx={x} cy={y} r={i === 0 ? 2 : 2.5}
+                              fill={i === trajectoryPoints.length - 1 ? 'rgba(242,232,220,0.6)' : 'rgba(242,232,220,0.25)'}
+                            />
+                          );
+                        })}
+                      </svg>
+                    </div>
+                  )}
+
+                  {/* Forgetting Curve */}
+                  {conceptState.attemptHistory.length > 0 && (
+                    <div>
+                      <p className="text-[9px] uppercase tracking-[0.2em] text-white/25 mb-2">Forgetting Curve</p>
+                      <ForgettingCurveChart
+                        currentMastery={mastery}
+                        daysSinceReview={timeSinceReview ?? 0}
+                        tier={concept.tier as Tier}
+                      />
+                    </div>
+                  )}
+
+                  {/* Adaptive Difficulty Rationale */}
+                  <div>
+                    <p className="text-[9px] uppercase tracking-[0.2em] text-white/25 mb-1">Difficulty Recommendation</p>
+                    <p className="text-xs text-white/35 font-light">
+                      <span className="text-white/50">{diffLabels[recommended - 1]}</span> recommended.
+                      {mastery < 0.3 && ' Low mastery suggests starting with easier items to build confidence.'}
+                      {mastery >= 0.3 && mastery < 0.7 && ' Moderate mastery is best challenged with medium difficulty.'}
+                      {mastery >= 0.7 && ' High mastery benefits from hard items to push toward the 85% threshold.'}
+                    </p>
+                  </div>
+
+                  {/* Next Review */}
+                  {nextReviewDays !== null && (
+                    <div>
+                      <p className="text-[9px] uppercase tracking-[0.2em] text-white/25 mb-1">Next Review</p>
+                      <p className="text-xs text-white/35 font-light">
+                        {nextReviewDays === 0
+                          ? 'Due today. Reviewing now prevents forgetting.'
+                          : nextReviewDays < 0
+                            ? `Overdue by ${Math.abs(nextReviewDays)} day${Math.abs(nextReviewDays) !== 1 ? 's' : ''}. Review soon to maintain retention.`
+                            : `In ${nextReviewDays} day${nextReviewDays !== 1 ? 's' : ''}. Interval grows with mastery (currently ${Math.round(mastery * 100)}%).`}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </AccordionSection>
 
           <AccordionSection title="AI Insight">
             {isLoadingAI ? (

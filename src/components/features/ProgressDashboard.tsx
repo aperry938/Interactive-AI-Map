@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import { useLearner } from '../../stores/learnerStore';
 import { curriculum, getConceptsByTier } from '../../data/curriculum';
 import { getDueForReview } from '../../engine/spacedRepetition';
-import type { Tier, ConceptNode } from '../../types/index';
+import { navigate } from '../../router/AppRouter';
+import type { Tier, ConceptNode, BloomLevel } from '../../types/index';
 import { TIER_CONFIG, MASTERY_THRESHOLD } from '../../types/index';
 
 interface ProgressDashboardProps {
@@ -15,35 +16,45 @@ interface ProgressDashboardProps {
 // Mastery Bar Chart
 // ============================================================================
 
-const MasteryBarChart: React.FC<{ conceptsByTier: Record<number, ConceptNode[]>; getMastery: (id: string) => number }> = ({ conceptsByTier, getMastery }) => (
-  <div className="space-y-6">
+// ============================================================================
+// Concept Mastery Heatmap (compact grid replacing verbose bar chart)
+// ============================================================================
+
+const MasteryHeatmap: React.FC<{ conceptsByTier: Record<number, ConceptNode[]>; getMastery: (id: string) => number }> = ({ conceptsByTier, getMastery }) => (
+  <div className="space-y-3">
     {([1, 2, 3, 4, 5] as Tier[]).map(tier => {
-      const concepts = conceptsByTier[tier] || [];
+      const concepts = (conceptsByTier[tier] || [])
+        .slice()
+        .sort((a, b) => getMastery(b.id) - getMastery(a.id));
       if (concepts.length === 0) return null;
       const cfg = TIER_CONFIG[tier];
       return (
         <div key={tier}>
-          <h4 className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-2">
-            T{tier} &mdash; {cfg.label}
-          </h4>
-          <div className="space-y-1.5">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-[9px] uppercase tracking-[0.2em] text-white/25">T{tier}</span>
+            <span className="text-[9px] text-white/15">{cfg.label}</span>
+          </div>
+          <div className="flex flex-wrap gap-1">
             {concepts.map((c, idx) => {
               const m = getMastery(c.id);
-              const pct = Math.round(m * 100);
+              const mastered = m >= MASTERY_THRESHOLD;
+              const bg = m <= 0.1
+                ? 'rgba(255,255,255,0.04)'
+                : mastered
+                  ? `rgba(242,232,220,${0.3 + m * 0.4})`
+                  : `rgba(242,232,220,${0.08 + m * 0.25})`;
               return (
-                <div key={c.id} className="flex items-center gap-2">
-                  <span className="text-xs text-white/40 w-32 truncate shrink-0" title={c.name}>{c.name}</span>
-                  <div className="flex-1 h-3 bg-white/[0.06] rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full rounded-full"
-                      style={{ backgroundColor: 'rgba(242,232,220,0.35)' }}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${pct}%` }}
-                      transition={{ duration: 0.6, delay: idx * 0.03, ease: 'easeOut' }}
-                    />
-                  </div>
-                  <span className="text-xs text-white/30 w-9 text-right shrink-0">{pct}%</span>
-                </div>
+                <motion.button
+                  key={c.id}
+                  onClick={() => navigate(`/learn/${c.id}`)}
+                  className="rounded-sm transition-transform hover:scale-110"
+                  style={{ width: 24, height: 24, backgroundColor: bg }}
+                  title={`${c.name}: ${Math.round(m * 100)}%`}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.2, delay: idx * 0.02 }}
+                  aria-label={`${c.name}, ${Math.round(m * 100)}% mastery`}
+                />
               );
             })}
           </div>
@@ -52,6 +63,107 @@ const MasteryBarChart: React.FC<{ conceptsByTier: Record<number, ConceptNode[]>;
     })}
   </div>
 );
+
+// ============================================================================
+// Quiz Accuracy by Difficulty
+// ============================================================================
+
+const DifficultyBreakdown: React.FC<{ conceptStates: Record<string, { attemptHistory: Array<{ correct: boolean; difficulty: number }> }> }> = ({ conceptStates }) => {
+  const stats = useMemo(() => {
+    const counts: Record<number, { total: number; correct: number }> = { 1: { total: 0, correct: 0 }, 2: { total: 0, correct: 0 }, 3: { total: 0, correct: 0 } };
+    for (const state of Object.values(conceptStates) as Array<{ attemptHistory: Array<{ correct: boolean; difficulty: number }> }>) {
+      for (const a of state.attemptHistory) {
+        const d = a.difficulty as 1 | 2 | 3;
+        if (counts[d]) {
+          counts[d].total++;
+          if (a.correct) counts[d].correct++;
+        }
+      }
+    }
+    return [
+      { label: 'Easy', ...counts[1] },
+      { label: 'Medium', ...counts[2] },
+      { label: 'Hard', ...counts[3] },
+    ];
+  }, [conceptStates]);
+
+  const hasData = stats.some(s => s.total > 0);
+  if (!hasData) return null;
+
+  return (
+    <div>
+      <h4 className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-3">Accuracy by Difficulty</h4>
+      <div className="space-y-2.5">
+        {stats.map((s, i) => {
+          const pct = s.total > 0 ? Math.round((s.correct / s.total) * 100) : 0;
+          return (
+            <div key={s.label} className="flex items-center gap-3">
+              <span className="text-xs text-white/35 w-14 shrink-0">{s.label}</span>
+              <div className="flex-1 h-2.5 bg-white/[0.06] rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ backgroundColor: `rgba(242,232,220,${0.25 + i * 0.1})` }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ duration: 0.6, delay: i * 0.1 }}
+                />
+              </div>
+              <span className="text-xs text-white/25 w-16 text-right shrink-0 tabular-nums">
+                {pct}% <span className="text-white/15">({s.total})</span>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// Bloom's Taxonomy Distribution
+// ============================================================================
+
+const BLOOM_LEVELS: BloomLevel[] = ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'];
+
+const BloomDistribution: React.FC<{ getMastery: (id: string) => number }> = ({ getMastery }) => {
+  const distribution = useMemo(() => {
+    return BLOOM_LEVELS.map(level => {
+      const concepts = Object.values(curriculum).filter(c => c.bloomLevel === level);
+      if (concepts.length === 0) return { level, avgMastery: 0, count: 0 };
+      const sum = concepts.reduce((s, c) => s + getMastery(c.id), 0);
+      return { level, avgMastery: sum / concepts.length, count: concepts.length };
+    });
+  }, [getMastery]);
+
+  const hasData = distribution.some(d => d.count > 0);
+  if (!hasData) return null;
+
+  return (
+    <div>
+      <h4 className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-3">Bloom&apos;s Taxonomy</h4>
+      <div className="space-y-2">
+        {distribution.map((d, i) => {
+          const pct = Math.round(d.avgMastery * 100);
+          return (
+            <div key={d.level} className="flex items-center gap-3">
+              <span className="text-[10px] text-white/35 w-16 shrink-0 capitalize">{d.level}</span>
+              <div className="flex-1 h-2 bg-white/[0.06] rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full bg-white/20"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ duration: 0.5, delay: i * 0.08 }}
+                />
+              </div>
+              <span className="text-[10px] text-white/20 w-12 text-right shrink-0 tabular-nums">
+                {pct}% <span className="text-white/10">({d.count})</span>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );};
 
 // ============================================================================
 // Activity Heatmap (GitHub-style, 30 days)
@@ -331,11 +443,17 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ onClose, f
       {/* Activity Heatmap */}
       <ActivityHeatmap sessionHistory={profile.sessionHistory} />
 
-      {/* Mastery Bar Chart */}
+      {/* Concept Mastery Heatmap */}
       <div>
         <h4 className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-3">Concept Mastery</h4>
-        <MasteryBarChart conceptsByTier={conceptsByTier} getMastery={getMastery} />
+        <MasteryHeatmap conceptsByTier={conceptsByTier} getMastery={getMastery} />
       </div>
+
+      {/* Quiz Accuracy by Difficulty */}
+      <DifficultyBreakdown conceptStates={profile.conceptStates} />
+
+      {/* Bloom's Taxonomy Distribution */}
+      <BloomDistribution getMastery={getMastery} />
 
       {/* Strengths */}
       <ConceptList title="Strengths" items={strengths} variant="strengths" />

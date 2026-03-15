@@ -127,3 +127,43 @@ export function applyForgetting(currentPL: number, daysSinceLastReview: number, 
   const pInit = 0.1;
   return pInit + (currentPL - pInit) * retention;
 }
+
+/**
+ * Compute knowledge transfer boosts when a concept crosses the mastery threshold.
+ *
+ * When a learner masters a concept, connected concepts (via `connections[]`)
+ * that haven't been attempted yet receive a small mastery boost. This models
+ * the transfer of related knowledge — mastering gradient descent, for example,
+ * provides some prior knowledge about backpropagation.
+ *
+ * @param masteredConceptId  The concept that was just mastered
+ * @param curriculum         Full curriculum map
+ * @param conceptStates      Current learner states
+ * @returns                  Map of concept IDs to their boosted mastery values
+ */
+export function computeTransferBoosts(
+  masteredConceptId: string,
+  curriculum: Record<string, { connections: string[]; tier: number }>,
+  conceptStates: Record<string, { masteryProbability: number; attemptHistory: { timestamp: number }[] }>,
+): Record<string, number> {
+  const boosts: Record<string, number> = {};
+  const mastered = curriculum[masteredConceptId];
+  if (!mastered) return boosts;
+
+  const TRANSFER_COEFFICIENT = 0.08; // Small boost: ~8% mastery increase
+  const MAX_BOOSTED_MASTERY = 0.4;   // Cap: transfer alone can't push past 40%
+
+  for (const connId of mastered.connections) {
+    const connState = conceptStates[connId];
+    // Only boost unattempted concepts (no quiz history yet)
+    if (connState && connState.attemptHistory.length === 0) {
+      const currentMastery = connState.masteryProbability;
+      const boosted = Math.min(MAX_BOOSTED_MASTERY, currentMastery + TRANSFER_COEFFICIENT);
+      if (boosted > currentMastery) {
+        boosts[connId] = boosted;
+      }
+    }
+  }
+
+  return boosts;
+}

@@ -174,6 +174,21 @@ export const LearnView: React.FC<LearnViewProps> = ({ initialConceptId }) => {
           transition={{ duration: 0.8 }}
           className="mb-16"
         >
+          {/* Header row with view toggle */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="text-[10px] uppercase tracking-[0.25em] text-white/30">List View</div>
+            <button
+              onClick={() => navigate('/map')}
+              className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/25 hover:text-white/50 transition-colors duration-300"
+              aria-label="Switch to map view"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 3.75H6A2.25 2.25 0 003.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0120.25 6v1.5m0 9V18A2.25 2.25 0 0118 20.25h-1.5m-9 0H6A2.25 2.25 0 013.75 18v-1.5M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Map
+            </button>
+          </div>
+
           {/* Stats */}
           <div className="flex items-end gap-8 mb-8">
             <div>

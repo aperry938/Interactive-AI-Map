@@ -20,12 +20,14 @@ interface KnowledgeGraphProps {
   searchTerm?: string;
   onSelectNode: (conceptId: string) => void;
   selectedNodeId?: string | null;
+  hideOverlays?: boolean;
 }
 
 export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
   searchTerm = '',
   onSelectNode,
   selectedNodeId,
+  hideOverlays = false,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -143,22 +145,33 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
     nodesRef.current = nodes;
     linksRef.current = links;
 
-    // Set initial positions based on tier
+    // Set initial positions based on tier with vertical spread
     for (const node of nodes) {
+      const tierNodes = nodes.filter(n => n.concept.tier === node.concept.tier);
+      const idx = tierNodes.indexOf(node);
+      const total = tierNodes.length;
       node.x = node.tierX * width;
-      node.y = height * 0.3 + Math.random() * height * 0.4;
+      node.y = height * 0.15 + (idx / Math.max(1, total - 1)) * height * 0.7;
     }
 
     const sim = d3.forceSimulation<GraphNode>(nodes)
       .force('link', d3.forceLink<GraphNode, GraphLink>(links)
         .id(d => d.id)
-        .distance(80)
-        .strength(0.3))
-      .force('charge', d3.forceManyBody().strength(-200))
+        .distance(120)
+        .strength(0.25))
+      .force('charge', d3.forceManyBody().strength(-350))
       .force('center', d3.forceCenter(width / 2, height / 2))
       .force('tierX', d3.forceX<GraphNode>(d => d.tierX * width).strength(0.15))
-      .force('tierY', d3.forceY(height / 2).strength(0.05))
-      .force('collision', d3.forceCollide<GraphNode>(d => d.radius + 8))
+      .force('tierY', d3.forceY<GraphNode>(d => {
+        // Spread nodes vertically within their tier band
+        const tierNodes = nodes.filter(n => n.concept.tier === d.concept.tier);
+        const idx = tierNodes.indexOf(d);
+        const total = tierNodes.length;
+        const spread = height * 0.7;
+        const offset = height * 0.15;
+        return offset + (idx / Math.max(1, total - 1)) * spread;
+      }).strength(0.08))
+      .force('collision', d3.forceCollide<GraphNode>(d => d.radius + 20))
       .alphaDecay(0.02);
 
     simRef.current = sim;
@@ -237,6 +250,7 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
       // Draw nodes — monotone warm aesthetic
       const drawTime = Date.now();
       let hasActiveReveal = false;
+      const renderedLabels: Array<{x: number; y: number; w: number}> = [];
       for (const node of nodes) {
         if (!node.x || !node.y) continue;
         const c = node.concept;
@@ -344,21 +358,37 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
           ctx.fillText('\u2713', node.x, node.y);
         }
 
-        // Label — warm tones
+        // Label — warm tones with truncation and collision avoidance
         if ((!dimmed || isSearchMatch) && revealScale > 0.5) {
           ctx.font = `${isHovered || isSelected ? '600' : '400'} 11px "Inter", sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
           const labelY = node.y + effectiveRadius + 6;
-          const textWidth = ctx.measureText(c.name).width;
-          ctx.globalAlpha = revealScale;
-          // Label background
-          ctx.fillStyle = 'rgba(10,7,7,0.85)';
-          ctx.fillRect(node.x - textWidth / 2 - 3, labelY - 1, textWidth + 6, 14);
-          // Label text
-          ctx.fillStyle = dimmed ? 'rgba(255,255,255,0.20)' : isSearchMatch && search ? '#D94436' : 'rgba(255,255,255,0.50)';
-          ctx.fillText(c.name, node.x, labelY);
-          ctx.globalAlpha = 1;
+
+          // Truncate long labels (show full on hover/select)
+          const maxChars = (isHovered || isSelected) ? 100 : 20;
+          const label = c.name.length > maxChars
+            ? c.name.slice(0, maxChars - 1) + '\u2026'
+            : c.name;
+          const textWidth = ctx.measureText(label).width;
+
+          // Collision avoidance: skip if overlapping another label (unless hovered/selected)
+          const overlaps = renderedLabels.some(r =>
+            Math.abs(node.x - r.x) < (textWidth + r.w) / 2 + 6 &&
+            Math.abs(labelY - r.y) < 16
+          );
+
+          if (!overlaps || isHovered || isSelected) {
+            ctx.globalAlpha = revealScale;
+            // Label background
+            ctx.fillStyle = 'rgba(10,7,7,0.85)';
+            ctx.fillRect(node.x - textWidth / 2 - 3, labelY - 1, textWidth + 6, 14);
+            // Label text
+            ctx.fillStyle = dimmed ? 'rgba(255,255,255,0.20)' : isSearchMatch && search ? '#D94436' : 'rgba(255,255,255,0.50)';
+            ctx.fillText(label, node.x, labelY);
+            ctx.globalAlpha = 1;
+            renderedLabels.push({ x: node.x, y: labelY, w: textWidth });
+          }
         }
       }
 
@@ -547,7 +577,12 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
       if (newCtx) newCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
       sim.force('center', d3.forceCenter(w / 2, h / 2));
       sim.force('tierX', d3.forceX<GraphNode>(d => d.tierX * w).strength(0.15));
-      sim.force('tierY', d3.forceY(h / 2).strength(0.05));
+      sim.force('tierY', d3.forceY<GraphNode>(d => {
+        const tierNodes = nodes.filter(n => n.concept.tier === d.concept.tier);
+        const idx = tierNodes.indexOf(d);
+        const total = tierNodes.length;
+        return h * 0.15 + (idx / Math.max(1, total - 1)) * h * 0.7;
+      }).strength(0.08));
       sim.alpha(0.3).restart();
     };
     window.addEventListener('resize', handleResize);
@@ -618,24 +653,27 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
         aria-label="Knowledge graph. Use arrow keys to navigate between concepts, Enter to open details, Escape to deselect."
         onKeyDown={handleKeyDown}
       />
-      {/* Tier legend — monotone */}
-      <div className="absolute bottom-4 left-4 flex gap-3 glass rounded-2xl px-3 py-2">
-        {([1, 2, 3, 4, 5] as Tier[]).map((t) => (
-          <div key={t} className="flex items-center gap-1.5 text-xs">
-            <div
-              className="w-2.5 h-2.5 rounded-full bg-white/60"
-              style={{ opacity: 0.4 + t * 0.12 }}
-            />
-            <span className="text-white/30">
-              T{t}
-            </span>
+      {/* Tier legend + concept count — hidden when parent provides its own overlays */}
+      {!hideOverlays && (
+        <>
+          <div className="absolute bottom-4 left-4 flex gap-3 glass rounded-2xl px-3 py-2">
+            {([1, 2, 3, 4, 5] as Tier[]).map((t) => (
+              <div key={t} className="flex items-center gap-1.5 text-xs">
+                <div
+                  className="w-2.5 h-2.5 rounded-full bg-white/60"
+                  style={{ opacity: 0.4 + t * 0.12 }}
+                />
+                <span className="text-white/30">
+                  T{t}
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      {/* Revealed node count */}
-      <div className="absolute bottom-4 right-4 glass rounded-2xl px-3 py-2 text-xs text-white/30">
-        {Object.keys(curriculum).length} concepts
-      </div>
+          <div className="absolute bottom-4 right-4 glass rounded-2xl px-3 py-2 text-xs text-white/30">
+            {Object.keys(curriculum).length} concepts
+          </div>
+        </>
+      )}
       {/* Hovered node tooltip */}
       {hoveredNode && curriculum[hoveredNode] && (
         <div className="absolute top-4 right-4 bg-[#0A0707]/90 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-3 max-w-xs pointer-events-none animate-fade-in">
@@ -645,12 +683,17 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
           <div className="text-xs text-white/40 mt-1">
             {curriculum[hoveredNode].description}
           </div>
+          {curriculum[hoveredNode].mathNotation && (
+            <div className="text-[10px] font-mono text-her-cream/40 mt-2 leading-relaxed truncate">
+              {curriculum[hoveredNode].mathNotation}
+            </div>
+          )}
           <div className="flex items-center gap-2 mt-2">
             <span className="text-[10px] uppercase tracking-wider text-white/20">
-              Tier {curriculum[hoveredNode].tier}
+              T{curriculum[hoveredNode].tier} &middot; {curriculum[hoveredNode].bloomLevel}
             </span>
             <span className="text-[10px] text-white/20">
-              {Math.round(getMastery(hoveredNode) * 100)}% mastery
+              {Math.round(getMastery(hoveredNode) * 100)}%
             </span>
           </div>
         </div>

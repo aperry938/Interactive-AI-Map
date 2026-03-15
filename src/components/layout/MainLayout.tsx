@@ -24,8 +24,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   const allIds = Object.keys(curriculum);
   const masteredCount = allIds.filter(id => getMastery(id) >= MASTERY_THRESHOLD).length;
 
-  // Don't show header on landing page
-  if (route.page === 'landing') {
+  // Don't show header on landing page or map (map has its own floating controls)
+  if (route.page === 'landing' || route.page === 'map') {
     return (
       <div className="flex flex-col h-screen overflow-hidden">
         <main role="main" className="flex-grow relative transition-colors duration-300">
@@ -36,11 +36,12 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   }
 
   const navItems = [
-    { path: '/learn', label: 'Learn', page: 'learn' },
+    { path: '/map', label: 'Map', page: 'map' },
+    { path: '/learn', label: 'List', page: 'learn' },
     { path: '/dashboard', label: 'Dashboard', page: 'dashboard' },
     { path: '/review', label: 'Review', page: 'review' },
     { path: '/pioneers', label: 'Encyclopedia', page: 'pioneers' },
-    { path: '/about', label: 'About', page: 'about' },
+    { path: '/methodology', label: 'Methodology', page: 'methodology' },
   ];
 
   return (
@@ -54,7 +55,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
       </a>
 
       <header role="banner" className="fixed top-0 left-0 right-0 z-30">
-        <div className="max-w-3xl mx-auto px-6 py-5">
+        <div className="max-w-4xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
             {/* Left: Logo */}
             <button
@@ -66,7 +67,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             </button>
 
             {/* Center: Nav links */}
-            <nav role="navigation" aria-label="Main navigation" className="hidden md:flex items-center gap-6">
+            <nav role="navigation" aria-label="Main navigation" className="hidden md:flex items-center gap-4">
               {navItems.map(item => (
                 <button
                   key={item.path}
@@ -154,7 +155,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         </div>
       </header>
 
-      <main id="main-content" role="main" className="flex-grow relative pt-20 transition-colors duration-300 overflow-y-auto">
+      <main id="main-content" role="main" className="flex-grow relative pt-14 transition-colors duration-300 overflow-y-auto">
         {children}
       </main>
 
